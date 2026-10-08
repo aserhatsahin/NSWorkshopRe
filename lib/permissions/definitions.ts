@@ -8,6 +8,8 @@ export const PERMISSIONS = {
   "student.update": ["OWNER", "STAFF"],
   "student.approve": ["OWNER", "STAFF"],
   "student.changeStatus": ["OWNER", "STAFF"],
+  "group.view": ["OWNER", "STAFF"],
+  "group.manage": ["OWNER", "STAFF"],
   "period.create": ["OWNER", "STAFF"],
   "period.setPrice": ["OWNER", "STAFF"],
   "attendance.mark": ["OWNER", "STAFF"],
