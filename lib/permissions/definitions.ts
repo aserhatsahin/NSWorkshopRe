@@ -18,6 +18,7 @@ export const PERMISSIONS = {
   "attendance.mark": ["OWNER", "STAFF"],
   "attendance.reopenPeriod": ["OWNER"],
   "payment.create": ["OWNER", "STAFF"],
+  "payment.reverse": ["OWNER"],
   "material.sell": ["OWNER", "STAFF"],
   "finance.viewStudent": ["OWNER", "STAFF"],
   "finance.viewGlobal": ["OWNER"],
