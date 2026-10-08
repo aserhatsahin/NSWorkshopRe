@@ -5,6 +5,7 @@ const OWNER_ONLY: Permission[] = [
   "finance.viewGlobal",
   "finance.viewDebtors",
   "finance.adjust",
+  "attendance.reopenPeriod",
   "reports.view",
   "staff.manage",
 ];
