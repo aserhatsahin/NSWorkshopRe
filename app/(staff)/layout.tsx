@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { requireRole } from "@/lib/auth/session";
 
 const NAV_LINKS = [
+  { href: "/attendance", label: "Yoklama" },
   { href: "/students", label: "Öğrenciler" },
   { href: "/groups", label: "Gruplar" },
 ];
