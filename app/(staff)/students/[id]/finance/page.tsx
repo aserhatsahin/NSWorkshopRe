@@ -1,0 +1,123 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { getCurrentUser } from "@/lib/auth/session";
+import { formatKurus } from "@/lib/money";
+import { hasPermission } from "@/lib/permissions/definitions";
+import { addManualEntryAction, reverseTransactionAction } from "@/modules/finance/actions";
+import { DEBT_CATEGORY_LABELS, TRANSACTION_TYPE_LABELS } from "@/modules/finance/ledger";
+import { getStudentDebt, listStudentTransactions } from "@/modules/finance/service";
+import { getStudent } from "@/modules/students/service";
+import { ManualEntryForm } from "./manual-entry-form";
+import { ReverseForm } from "./reverse-form";
+
+export const metadata: Metadata = { title: "Finans geçmişi" };
+
+type FinancePageProps = { params: Promise<{ id: string }> };
+
+const dateTimeFormatter = new Intl.DateTimeFormat("tr-TR", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Europe/Istanbul",
+});
+
+function formatSigned(kurus: number): string {
+  return `${kurus > 0 ? "+" : ""}${formatKurus(kurus)}`;
+}
+
+export default function FinancePage({ params }: FinancePageProps) {
+  return (
+    <div className="flex flex-col gap-6">
+      <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
+        <StudentFinance params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function StudentFinance({ params }: FinancePageProps) {
+  const { id } = await params;
+  const student = await getStudent(id);
+  if (!student) {
+    notFound();
+  }
+
+  const [debt, transactions, user] = await Promise.all([
+    getStudentDebt(student.id),
+    listStudentTransactions(student.id),
+    getCurrentUser(),
+  ]);
+  // Sadece arayüzü sadeleştirir; asıl kontrol service içindeki requirePermission'dır.
+  const canAdjust = user !== null && hasPermission(user.role, "finance.adjust");
+
+  return (
+    <>
+      <div>
+        <Link href={`/students/${student.id}`} className="text-sm text-zinc-500 hover:underline">
+          ← {student.fullName}
+        </Link>
+        <h1 className="mt-2 text-2xl font-semibold">Finans geçmişi</h1>
+      </div>
+
+      <dl className="grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "Toplam borç", value: debt.total },
+          { label: "Kurs", value: debt.course },
+          { label: "Malzeme", value: debt.material },
+          { label: "Diğer", value: debt.other },
+        ].map((item) => (
+          <div key={item.label} className="rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800">
+            <dt className="text-sm text-zinc-500">{item.label}</dt>
+            <dd className="font-medium">{formatKurus(item.value)}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-medium">Kayıtlar</h2>
+        {transactions.length === 0 ? (
+          <p className="text-zinc-500">Henüz finans kaydı yok.</p>
+        ) : (
+          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {transactions.map((transaction) => (
+              <li key={transaction.id} className="flex flex-col gap-2 px-4 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                  <span className="flex flex-col">
+                    <span className="font-medium">
+                      {TRANSACTION_TYPE_LABELS[transaction.type]}
+                      <span className="font-normal text-zinc-500"> · {DEBT_CATEGORY_LABELS[transaction.category]}</span>
+                    </span>
+                    {transaction.description ? <span className="text-sm">{transaction.description}</span> : null}
+                    <span className="text-sm text-zinc-500">
+                      {dateTimeFormatter.format(transaction.createdAt)}
+                      {transaction.reversalTransaction ? " · ters çevrildi" : ""}
+                      {transaction.reversedTransactionId ? " · ters kayıt" : ""}
+                    </span>
+                  </span>
+                  <span className="flex flex-col items-end">
+                    <span className="font-medium tabular-nums">{formatSigned(transaction.amount)}</span>
+                    <span className="text-sm text-zinc-500 tabular-nums">Bakiye {formatKurus(transaction.balance)}</span>
+                  </span>
+                </div>
+                {canAdjust && transaction.canReverse ? (
+                  <ReverseForm action={reverseTransactionAction.bind(null, transaction.id)} />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {canAdjust ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-medium">Elle kayıt ekle</h2>
+          <p className="max-w-md text-sm text-zinc-500">
+            Kayıtlar silinmez ve düzenlenmez. Hatalı bir kaydı düzeltmek için ters kayıt yazılır.
+          </p>
+          <ManualEntryForm action={addManualEntryAction.bind(null, student.id)} />
+        </section>
+      ) : null}
+    </>
+  );
+}

@@ -13,6 +13,7 @@ export const PERMISSIONS = {
   "period.view": ["OWNER", "STAFF"],
   "period.create": ["OWNER", "STAFF"],
   "period.setPrice": ["OWNER", "STAFF"],
+  "period.cancel": ["OWNER"],
   "attendance.view": ["OWNER", "STAFF"],
   "attendance.mark": ["OWNER", "STAFF"],
   "attendance.reopenPeriod": ["OWNER"],
