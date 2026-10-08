@@ -10,6 +10,7 @@ export const PERMISSIONS = {
   "student.changeStatus": ["OWNER", "STAFF"],
   "group.view": ["OWNER", "STAFF"],
   "group.manage": ["OWNER", "STAFF"],
+  "period.view": ["OWNER", "STAFF"],
   "period.create": ["OWNER", "STAFF"],
   "period.setPrice": ["OWNER", "STAFF"],
   "attendance.mark": ["OWNER", "STAFF"],
