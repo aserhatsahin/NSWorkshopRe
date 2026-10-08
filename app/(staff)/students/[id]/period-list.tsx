@@ -66,6 +66,14 @@ export async function PeriodList({ studentId, canOpenPeriod }: PeriodListProps) 
         <Link href={`/students/${studentId}/finance`} className="underline">
           Finans geçmişi
         </Link>
+        {debt.total > 0 ? (
+          <>
+            {" · "}
+            <Link href={`/students/${studentId}/payments/new`} className="underline">
+              Ödeme al
+            </Link>
+          </>
+        ) : null}
       </p>
 
       {periods.length === 0 ? (

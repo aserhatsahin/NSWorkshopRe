@@ -2,12 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { secondaryButton } from "@/components/button-styles";
 import { getCurrentUser } from "@/lib/auth/session";
 import { formatKurus } from "@/lib/money";
 import { hasPermission } from "@/lib/permissions/definitions";
 import { addManualEntryAction, reverseTransactionAction } from "@/modules/finance/actions";
 import { DEBT_CATEGORY_LABELS, TRANSACTION_TYPE_LABELS } from "@/modules/finance/ledger";
 import { getStudentDebt, listStudentTransactions } from "@/modules/finance/service";
+import { reversePaymentAction } from "@/modules/payments/actions";
+import { PAYMENT_METHOD_LABELS } from "@/modules/payments/schema";
+import { listStudentPayments } from "@/modules/payments/service";
 import { getStudent } from "@/modules/students/service";
 import { ManualEntryForm } from "./manual-entry-form";
 import { ReverseForm } from "./reverse-form";
@@ -43,13 +47,15 @@ async function StudentFinance({ params }: FinancePageProps) {
     notFound();
   }
 
-  const [debt, transactions, user] = await Promise.all([
+  const [debt, transactions, payments, user] = await Promise.all([
     getStudentDebt(student.id),
     listStudentTransactions(student.id),
+    listStudentPayments(student.id),
     getCurrentUser(),
   ]);
   // Sadece arayüzü sadeleştirir; asıl kontrol service içindeki requirePermission'dır.
   const canAdjust = user !== null && hasPermission(user.role, "finance.adjust");
+  const canReversePayment = user !== null && hasPermission(user.role, "payment.reverse");
 
   return (
     <>
@@ -73,6 +79,52 @@ async function StudentFinance({ params }: FinancePageProps) {
           </div>
         ))}
       </dl>
+
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-lg font-medium">Ödemeler</h2>
+          {debt.total > 0 ? (
+            <Link href={`/students/${student.id}/payments/new`} className={secondaryButton}>
+              Ödeme al
+            </Link>
+          ) : null}
+        </div>
+        {payments.length === 0 ? (
+          <p className="text-zinc-500">Henüz ödeme alınmamış.</p>
+        ) : (
+          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {payments.map((payment) => (
+              <li key={payment.id} className="flex flex-col gap-2 px-4 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                  <span className="flex flex-col">
+                    <span className="font-medium">
+                      {PAYMENT_METHOD_LABELS[payment.method]}
+                      {payment.isReversed ? <span className="font-normal text-red-600"> · iptal edildi</span> : null}
+                    </span>
+                    <span className="text-sm text-zinc-500">
+                      {payment.allocations
+                        .map((allocation) => `${DEBT_CATEGORY_LABELS[allocation.category]} ${formatKurus(allocation.amount)}`)
+                        .join(" · ")}
+                    </span>
+                    {payment.note ? <span className="text-sm">{payment.note}</span> : null}
+                    <span className="text-sm text-zinc-500">{dateTimeFormatter.format(payment.receivedAt)}</span>
+                  </span>
+                  <span className={`font-medium tabular-nums ${payment.isReversed ? "line-through" : ""}`}>
+                    {formatKurus(payment.amount)}
+                  </span>
+                </div>
+                {canReversePayment && !payment.isReversed ? (
+                  <ReverseForm
+                    label="Ödemeyi iptal et"
+                    submitLabel="İptali onayla"
+                    action={reversePaymentAction.bind(null, payment.id)}
+                  />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Kayıtlar</h2>
