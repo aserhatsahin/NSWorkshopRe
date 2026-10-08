@@ -6,9 +6,9 @@ import { PrismaClient } from "../lib/generated/prisma/client";
 const SETTINGS_ID = "default";
 
 const SAMPLE_GROUPS = [
-  { dayOfWeek: 6, startTime: "10:00", endTime: "12:00", label: "Cumartesi 10:00-12:00" },
-  { dayOfWeek: 6, startTime: "13:00", endTime: "15:00", label: "Cumartesi 13:00-15:00" },
-  { dayOfWeek: 0, startTime: "10:00", endTime: "12:00", label: "Pazar 10:00-12:00" },
+  { dayOfWeek: 6, startTime: "10:00", endTime: "12:00" },
+  { dayOfWeek: 6, startTime: "13:00", endTime: "15:00" },
+  { dayOfWeek: 0, startTime: "10:00", endTime: "12:00" },
 ];
 
 // Fiyatlar kuruş.
