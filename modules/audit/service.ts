@@ -8,7 +8,8 @@ export type AuditAction =
   | "STUDENT_STATUS_CHANGED"
   | "GROUP_CREATED"
   | "GROUP_UPDATED"
-  | "PERIOD_CREATED";
+  | "PERIOD_CREATED"
+  | "ATTENDANCE_MARKED";
 
 type AuditEntry = {
   actorId: string;
