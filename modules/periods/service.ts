@@ -2,12 +2,15 @@ import { formatDate } from "@/lib/dates";
 import { prisma } from "@/lib/db/prisma";
 import { DomainError } from "@/lib/errors";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { formatKurus } from "@/lib/money";
 import { requirePermission } from "@/lib/permissions/guard";
 import { logAudit } from "@/modules/audit/service";
+import { createLedgerEntry } from "@/modules/finance/entries";
 import { lockStudentForFinance } from "@/modules/finance/lock";
 import { DAY_NAMES } from "@/modules/groups/format";
 import { buildLessonDates } from "./lessons";
 import type { PeriodFormInput } from "./schema";
+import { countMarkedLessons } from "./status";
 
 const periodSelect = {
   id: true,
@@ -81,16 +84,14 @@ export async function createPeriod(studentId: string, input: PeriodFormInput): P
       select: { id: true },
     });
 
-    await tx.financialTransaction.create({
-      data: {
-        studentId,
-        type: "PERIOD_FEE",
-        category: "COURSE",
-        amount: input.price,
-        description: `${formatDate(input.startDate)} dönemi ücreti`,
-        studentPeriodId: period.id,
-        createdById: actor.id,
-      },
+    await createLedgerEntry(tx, {
+      studentId,
+      type: "PERIOD_FEE",
+      category: "COURSE",
+      amount: input.price,
+      description: `${formatDate(input.startDate)} dönemi ücreti`,
+      studentPeriodId: period.id,
+      createdById: actor.id,
     });
 
     await logAudit(tx, {
@@ -106,5 +107,111 @@ export async function createPeriod(studentId: string, input: PeriodFormInput): P
     });
 
     return period;
+  });
+}
+
+async function findPeriodStudent(periodId: string): Promise<string> {
+  const period = await prisma.studentPeriod.findUnique({ where: { id: periodId }, select: { studentId: true } });
+  if (!period) {
+    throw new DomainError("Dönem bulunamadı.");
+  }
+  return period.studentId;
+}
+
+// Yanlışlıkla açılmış dönem içindir: dönem silinmez, CANCELLED olur ve
+// döneme yazılmış tüm ücret kayıtlarının toplamı tek bir ters kayıtla sıfırlanır.
+export async function cancelPeriod(periodId: string): Promise<void> {
+  const actor = await requirePermission("period.cancel");
+  const studentId = await findPeriodStudent(periodId);
+
+  await prisma.$transaction(async (tx) => {
+    await lockStudentForFinance(tx, studentId);
+
+    const period = await tx.studentPeriod.findUniqueOrThrow({
+      where: { id: periodId },
+      select: {
+        status: true,
+        startDate: true,
+        lessons: { select: { status: true } },
+        transactions: { select: { id: true, type: true, amount: true }, orderBy: { createdAt: "asc" } },
+      },
+    });
+    if (period.status !== "ACTIVE") {
+      throw new DomainError("Yalnızca aktif dönem iptal edilebilir.");
+    }
+    if (countMarkedLessons(period.lessons) > 0) {
+      throw new DomainError("Yoklaması girilmiş dönem iptal edilemez. Önce yoklama işaretlerini kaldır.");
+    }
+
+    const fee = period.transactions.find((transaction) => transaction.type === "PERIOD_FEE");
+    const charged = period.transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    if (!fee) {
+      throw new Error(`Dönemin ücret kaydı yok: ${periodId}`);
+    }
+
+    await tx.studentPeriod.update({ where: { id: periodId }, data: { status: "CANCELLED" } });
+
+    if (charged !== 0) {
+      await createLedgerEntry(tx, {
+        studentId,
+        type: "ADJUSTMENT",
+        category: "COURSE",
+        amount: -charged,
+        description: `${formatDate(period.startDate)} dönemi iptal edildi`,
+        reversedTransactionId: fee.id,
+        studentPeriodId: periodId,
+        createdById: actor.id,
+      });
+    }
+
+    await logAudit(tx, {
+      actorId: actor.id,
+      action: "PERIOD_CANCELLED",
+      targetStudentId: studentId,
+      metadata: { periodId, reversedAmount: charged },
+    });
+  });
+}
+
+// StudentPeriod.price snapshot'tır; sessizce değiştirilmez. Düzeltme, alanı
+// günceller ve aradaki farkı aynı transaction'da ADJUSTMENT olarak deftere yazar.
+export async function correctPeriodPrice(periodId: string, newPrice: number): Promise<void> {
+  const actor = await requirePermission("finance.adjust");
+  const studentId = await findPeriodStudent(periodId);
+
+  await prisma.$transaction(async (tx) => {
+    await lockStudentForFinance(tx, studentId);
+
+    const period = await tx.studentPeriod.findUniqueOrThrow({
+      where: { id: periodId },
+      select: { status: true, price: true, startDate: true },
+    });
+    if (period.status === "CANCELLED") {
+      throw new DomainError("İptal edilmiş dönemin ücreti düzeltilemez.");
+    }
+
+    const difference = newPrice - period.price;
+    if (difference === 0) {
+      throw new DomainError("Yeni ücret mevcut ücretle aynı.");
+    }
+
+    await tx.studentPeriod.update({ where: { id: periodId }, data: { price: newPrice } });
+
+    await createLedgerEntry(tx, {
+      studentId,
+      type: "ADJUSTMENT",
+      category: "COURSE",
+      amount: difference,
+      description: `${formatDate(period.startDate)} dönemi ücret düzeltmesi: ${formatKurus(period.price)} → ${formatKurus(newPrice)}`,
+      studentPeriodId: periodId,
+      createdById: actor.id,
+    });
+
+    await logAudit(tx, {
+      actorId: actor.id,
+      action: "PERIOD_PRICE_CORRECTED",
+      targetStudentId: studentId,
+      metadata: { periodId, from: period.price, to: newPrice },
+    });
   });
 }
