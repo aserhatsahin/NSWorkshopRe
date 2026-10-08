@@ -9,6 +9,8 @@ import { hasPermission } from "@/lib/permissions/definitions";
 import { addManualEntryAction, reverseTransactionAction } from "@/modules/finance/actions";
 import { DEBT_CATEGORY_LABELS, TRANSACTION_TYPE_LABELS } from "@/modules/finance/ledger";
 import { getStudentDebt, listStudentTransactions } from "@/modules/finance/service";
+import { returnMaterialSaleAction } from "@/modules/materials/actions";
+import { listStudentSales } from "@/modules/materials/service";
 import { reversePaymentAction } from "@/modules/payments/actions";
 import { PAYMENT_METHOD_LABELS } from "@/modules/payments/schema";
 import { listStudentPayments } from "@/modules/payments/service";
@@ -47,15 +49,17 @@ async function StudentFinance({ params }: FinancePageProps) {
     notFound();
   }
 
-  const [debt, transactions, payments, user] = await Promise.all([
+  const [debt, transactions, payments, sales, user] = await Promise.all([
     getStudentDebt(student.id),
     listStudentTransactions(student.id),
     listStudentPayments(student.id),
+    listStudentSales(student.id),
     getCurrentUser(),
   ]);
   // Sadece arayüzü sadeleştirir; asıl kontrol service içindeki requirePermission'dır.
   const canAdjust = user !== null && hasPermission(user.role, "finance.adjust");
   const canReversePayment = user !== null && hasPermission(user.role, "payment.reverse");
+  const canReturnSale = user !== null && hasPermission(user.role, "material.return");
 
   return (
     <>
@@ -118,6 +122,49 @@ async function StudentFinance({ params }: FinancePageProps) {
                     label="Ödemeyi iptal et"
                     submitLabel="İptali onayla"
                     action={reversePaymentAction.bind(null, payment.id)}
+                  />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-lg font-medium">Malzeme satışları</h2>
+          {student.status === "ACTIVE" ? (
+            <Link href={`/students/${student.id}/sales/new`} className={secondaryButton}>
+              Malzeme sat
+            </Link>
+          ) : null}
+        </div>
+        {sales.length === 0 ? (
+          <p className="text-zinc-500">Henüz malzeme satışı yok.</p>
+        ) : (
+          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {sales.map((sale) => (
+              <li key={sale.id} className="flex flex-col gap-2 px-4 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                  <span className="flex flex-col">
+                    <span className="font-medium">
+                      {sale.product.name}
+                      {sale.isReturned ? <span className="font-normal text-red-600"> · iade edildi</span> : null}
+                    </span>
+                    <span className="text-sm text-zinc-500">
+                      {sale.quantity} adet × {formatKurus(sale.unitPrice)}
+                    </span>
+                    <span className="text-sm text-zinc-500">{dateTimeFormatter.format(sale.soldAt)}</span>
+                  </span>
+                  <span className={`font-medium tabular-nums ${sale.isReturned ? "line-through" : ""}`}>
+                    {formatKurus(sale.total)}
+                  </span>
+                </div>
+                {canReturnSale && !sale.isReturned ? (
+                  <ReverseForm
+                    label="İade al"
+                    submitLabel="İadeyi onayla"
+                    action={returnMaterialSaleAction.bind(null, sale.id)}
                   />
                 ) : null}
               </li>

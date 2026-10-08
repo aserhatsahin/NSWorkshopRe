@@ -74,6 +74,14 @@ export async function PeriodList({ studentId, canOpenPeriod }: PeriodListProps) 
             </Link>
           </>
         ) : null}
+        {canOpenPeriod ? (
+          <>
+            {" · "}
+            <Link href={`/students/${studentId}/sales/new`} className="underline">
+              Malzeme sat
+            </Link>
+          </>
+        ) : null}
       </p>
 
       {periods.length === 0 ? (
