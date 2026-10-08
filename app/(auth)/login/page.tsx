@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -12,6 +13,12 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <h1 className="mb-6 text-2xl font-semibold">NSWorkshop</h1>
         <LoginForm />
+        <p className="mt-6 text-sm">
+          Öğrenci misin?{" "}
+          <Link href="/register" className="font-medium underline">
+            Kayıt ol
+          </Link>
+        </p>
         <Suspense fallback={null}>
           <RedirectIfSignedIn />
         </Suspense>
