@@ -6,6 +6,8 @@ import type { FormState } from "@/lib/action-state";
 
 type PeriodActionsProps = {
   currentPrice: string;
+  // İptalin borca etkisini anlatan, sunucuda hesaplanmış cümle.
+  cancelSummary?: string;
   cancelAction?: () => Promise<FormState>;
   correctPriceAction: (state: FormState, formData: FormData) => Promise<FormState>;
 };
@@ -14,7 +16,7 @@ async function noop(): Promise<FormState> {
   return {};
 }
 
-export function PeriodActions({ currentPrice, cancelAction, correctPriceAction }: PeriodActionsProps) {
+export function PeriodActions({ currentPrice, cancelSummary, cancelAction, correctPriceAction }: PeriodActionsProps) {
   const [cancelState, cancel, isCancelling] = useActionState(cancelAction ?? noop, {});
   const [priceState, correctPrice, isCorrecting] = useActionState(correctPriceAction, {});
   const priceError = priceState.error ?? priceState.fieldErrors?.price?.join(" ");
@@ -43,7 +45,7 @@ export function PeriodActions({ currentPrice, cancelAction, correctPriceAction }
           <details>
             <summary className="cursor-pointer text-zinc-500 underline">Dönemi iptal et</summary>
             <form action={cancel} className="mt-2 flex flex-col items-start gap-2">
-              <p className="max-w-xs text-zinc-500">Dönem iptal edilir ve ücreti ters kayıtla borçtan düşülür. Geri alınamaz.</p>
+              <p className="max-w-sm text-zinc-500">{cancelSummary} Geri alınamaz.</p>
               <button type="submit" disabled={isPending} className={secondaryButton}>
                 {isCancelling ? "İptal ediliyor…" : "İptali onayla"}
               </button>

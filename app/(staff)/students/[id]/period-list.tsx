@@ -9,12 +9,27 @@ import { markAttendanceAction } from "@/modules/attendance/actions";
 import { getStudentDebt } from "@/modules/finance/service";
 import { formatGroupName } from "@/modules/groups/format";
 import { cancelPeriodAction, correctPeriodPriceAction } from "@/modules/periods/actions";
+import { calculateCancellationRefund } from "@/modules/periods/cancellation";
 import { LESSONS_PER_PERIOD } from "@/modules/periods/lessons";
-import { listStudentPeriods } from "@/modules/periods/service";
+import { listStudentPeriods, type PeriodSummary } from "@/modules/periods/service";
 import { countMarkedLessons, PERIOD_STATUS_LABELS } from "@/modules/periods/status";
 import { PeriodActions } from "./period-actions";
 
 type PeriodListProps = { studentId: string; canOpenPeriod: boolean };
+
+function describeCancellation(period: PeriodSummary): string {
+  const charged = period.transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const { remainingLessons, refund } = calculateCancellationRefund(
+    charged,
+    period.lessons.map((lesson) => lesson.status),
+  );
+  const processed = period.lessons.length - remainingLessons;
+
+  if (processed === 0) {
+    return `Hiç ders işlenmedi; dönem ücretinin tamamı (${formatKurus(refund)}) borçtan düşülecek.`;
+  }
+  return `${processed} ders işlendi; işlenmemiş ${remainingLessons} dersin ücreti (${formatKurus(refund)}) borçtan düşülecek, ${formatKurus(charged - refund)} borç olarak kalacak.`;
+}
 
 export async function PeriodList({ studentId, canOpenPeriod }: PeriodListProps) {
   const [periods, debt, user] = await Promise.all([
@@ -90,10 +105,9 @@ export async function PeriodList({ studentId, canOpenPeriod }: PeriodListProps) 
                 <PeriodActions
                   currentPrice={kurusToLiraInput(period.price)}
                   correctPriceAction={correctPeriodPriceAction.bind(null, period.id)}
+                  cancelSummary={describeCancellation(period)}
                   cancelAction={
-                    canCancel && period.status === "ACTIVE" && countMarkedLessons(period.lessons) === 0
-                      ? cancelPeriodAction.bind(null, period.id)
-                      : undefined
+                    canCancel && period.status === "ACTIVE" ? cancelPeriodAction.bind(null, period.id) : undefined
                   }
                 />
               ) : null}

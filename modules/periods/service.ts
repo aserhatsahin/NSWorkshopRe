@@ -8,9 +8,9 @@ import { logAudit } from "@/modules/audit/service";
 import { createLedgerEntry } from "@/modules/finance/entries";
 import { lockStudentForFinance } from "@/modules/finance/lock";
 import { DAY_NAMES } from "@/modules/groups/format";
+import { calculateCancellationRefund } from "./cancellation";
 import { buildLessonDates } from "./lessons";
 import type { PeriodFormInput } from "./schema";
-import { countMarkedLessons } from "./status";
 
 const periodSelect = {
   id: true,
@@ -22,6 +22,9 @@ const periodSelect = {
     select: { id: true, weekNumber: true, lessonDate: true, status: true },
     orderBy: { weekNumber: "asc" },
   },
+  // Döneme yazılmış ücret kayıtları (ücret + düzeltmeler); iptalde
+  // düşülecek tutarı göstermek için.
+  transactions: { select: { amount: true } },
 } satisfies Prisma.StudentPeriodSelect;
 
 export type PeriodSummary = Prisma.StudentPeriodGetPayload<{ select: typeof periodSelect }>;
@@ -118,8 +121,9 @@ async function findPeriodStudent(periodId: string): Promise<string> {
   return period.studentId;
 }
 
-// Yanlışlıkla açılmış dönem içindir: dönem silinmez, CANCELLED olur ve
-// döneme yazılmış tüm ücret kayıtlarının toplamı tek bir ters kayıtla sıfırlanır.
+// Dönem silinmez, CANCELLED olur. Yalnızca işlenmemiş derslerin payı borçtan
+// düşülür: hiç ders işlenmediyse ücretin tamamı, 2 ders işlendiyse yarısı.
+// İşlenmiş derslerin yoklaması ve ücreti yerinde kalır.
 export async function cancelPeriod(periodId: string): Promise<void> {
   const actor = await requirePermission("period.cancel");
   const studentId = await findPeriodStudent(periodId);
@@ -139,9 +143,6 @@ export async function cancelPeriod(periodId: string): Promise<void> {
     if (period.status !== "ACTIVE") {
       throw new DomainError("Yalnızca aktif dönem iptal edilebilir.");
     }
-    if (countMarkedLessons(period.lessons) > 0) {
-      throw new DomainError("Yoklaması girilmiş dönem iptal edilemez. Önce yoklama işaretlerini kaldır.");
-    }
 
     const fee = period.transactions.find((transaction) => transaction.type === "PERIOD_FEE");
     const charged = period.transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
@@ -149,16 +150,26 @@ export async function cancelPeriod(periodId: string): Promise<void> {
       throw new Error(`Dönemin ücret kaydı yok: ${periodId}`);
     }
 
+    const { remainingLessons, refund } = calculateCancellationRefund(
+      charged,
+      period.lessons.map((lesson) => lesson.status),
+    );
+    const isFullRefund = refund === charged;
+
     await tx.studentPeriod.update({ where: { id: periodId }, data: { status: "CANCELLED" } });
 
-    if (charged !== 0) {
+    if (refund > 0) {
       await createLedgerEntry(tx, {
         studentId,
         type: "ADJUSTMENT",
         category: "COURSE",
-        amount: -charged,
-        description: `${formatDate(period.startDate)} dönemi iptal edildi`,
-        reversedTransactionId: fee.id,
+        amount: -refund,
+        description: isFullRefund
+          ? `${formatDate(period.startDate)} dönemi iptal edildi`
+          : `${formatDate(period.startDate)} dönemi iptal edildi (işlenmemiş ${remainingLessons} dersin ücreti)`,
+        // Kısmi düşüm ücret kaydını tamamen ters çevirmez; o yüzden
+        // yalnızca tam iade ücret kaydına ters kayıt olarak bağlanır.
+        reversedTransactionId: isFullRefund ? fee.id : undefined,
         studentPeriodId: periodId,
         createdById: actor.id,
       });
@@ -168,7 +179,7 @@ export async function cancelPeriod(periodId: string): Promise<void> {
       actorId: actor.id,
       action: "PERIOD_CANCELLED",
       targetStudentId: studentId,
-      metadata: { periodId, reversedAmount: charged },
+      metadata: { periodId, charged, refund, remainingLessons },
     });
   });
 }
