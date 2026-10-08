@@ -7,6 +7,7 @@ const OWNER_ONLY: Permission[] = [
   "finance.adjust",
   "attendance.reopenPeriod",
   "period.cancel",
+  "payment.reverse",
   "reports.view",
   "staff.manage",
 ];
