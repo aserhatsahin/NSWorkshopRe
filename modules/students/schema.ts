@@ -34,11 +34,14 @@ const optionalPrice = z.preprocess(emptyToNull, z.string().nullable()).transform
   return kurus;
 });
 
+const optionalGroupId = z.preprocess(emptyToNull, z.string().max(40).nullable());
+
 export const studentFormSchema = z.object({
   fullName,
   phone: optionalPhone,
   email: optionalEmail,
   customPrice: optionalPrice,
+  defaultGroupId: optionalGroupId,
 });
 
 export type StudentFormInput = z.infer<typeof studentFormSchema>;

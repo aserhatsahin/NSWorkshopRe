@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { formatGroupName } from "@/modules/groups/format";
+import { listGroups } from "@/modules/groups/service";
 import { createStudentAction } from "@/modules/students/actions";
 import { StudentForm } from "../student-form";
 
@@ -14,7 +17,21 @@ export default function NewStudentPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">Yeni öğrenci</h1>
       </div>
-      <StudentForm action={createStudentAction} submitLabel="Öğrenciyi ekle" />
+      <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
+        <NewStudentForm />
+      </Suspense>
     </div>
+  );
+}
+
+async function NewStudentForm() {
+  const groups = await listGroups({ activeOnly: true });
+
+  return (
+    <StudentForm
+      action={createStudentAction}
+      submitLabel="Öğrenciyi ekle"
+      groupOptions={groups.map((group) => ({ value: group.id, label: formatGroupName(group) }))}
+    />
   );
 }
