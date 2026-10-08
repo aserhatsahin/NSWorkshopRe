@@ -3,7 +3,9 @@ import type { Role } from "@/lib/generated/prisma/client";
 // Yetkilerin tek kaynağı. Yeni bir yetki eklerken hangi rollerin
 // eriştiği burada yazılır; başka hiçbir yerde rol karşılaştırması yapılmaz.
 export const PERMISSIONS = {
+  "student.view": ["OWNER", "STAFF"],
   "student.create": ["OWNER", "STAFF"],
+  "student.update": ["OWNER", "STAFF"],
   "student.approve": ["OWNER", "STAFF"],
   "student.changeStatus": ["OWNER", "STAFF"],
   "period.create": ["OWNER", "STAFF"],

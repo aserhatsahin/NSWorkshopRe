@@ -2,13 +2,15 @@ import type { NextAuthConfig } from "next-auth";
 
 // Bu dosya proxy.ts tarafından da yüklenir; her istekte çalıştığı için
 // Prisma veya bcrypt import etmez. Provider'lar lib/auth/index.ts'te eklenir.
+const PUBLIC_PATHS = ["/login", "/register"];
+
 export const authConfig = {
   pages: { signIn: "/login" },
   session: { strategy: "jwt" },
   providers: [],
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
-      if (nextUrl.pathname === "/login") {
+      if (PUBLIC_PATHS.includes(nextUrl.pathname)) {
         return true;
       }
       return Boolean(auth?.user);
