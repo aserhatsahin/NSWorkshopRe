@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { href: "/attendance", label: "Yoklama" },
   { href: "/students", label: "Öğrenciler" },
   { href: "/groups", label: "Gruplar" },
+  { href: "/products", label: "Ürünler" },
 ];
 
 export default function StaffLayout({ children }: { children: ReactNode }) {

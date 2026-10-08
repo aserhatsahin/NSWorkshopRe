@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { ActiveToggle } from "@/components/active-toggle";
 import { setGroupActiveAction, updateGroupAction } from "@/modules/groups/actions";
 import { formatGroupName } from "@/modules/groups/format";
 import { getGroup } from "@/modules/groups/service";
 import { listStudents } from "@/modules/students/service";
 import { STUDENT_STATUS_LABELS } from "@/modules/students/status";
 import { GroupForm } from "../group-form";
-import { ActiveToggle } from "./active-toggle";
 
 export const metadata: Metadata = { title: "Grup" };
 
