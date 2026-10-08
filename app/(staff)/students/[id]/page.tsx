@@ -13,6 +13,7 @@ import {
 import { getStudent } from "@/modules/students/service";
 import { allowedStatusTransitions, STUDENT_STATUS_LABELS } from "@/modules/students/status";
 import { StudentForm } from "../student-form";
+import { PeriodList } from "./period-list";
 import { StatusActions } from "./status-actions";
 
 export const metadata: Metadata = { title: "Öğrenci" };
@@ -69,6 +70,8 @@ async function StudentDetail({ params }: StudentPageProps) {
           changeStatusAction={changeStudentStatusAction.bind(null, student.id)}
         />
       </section>
+
+      <PeriodList studentId={student.id} canOpenPeriod={student.status === "ACTIVE"} />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Bilgiler</h2>
