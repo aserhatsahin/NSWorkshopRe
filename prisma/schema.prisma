@@ -1,0 +1,364 @@
+// ============================================================
+// NSWorkshop — Prisma Schema (v2)
+// ============================================================
+// v1'den farklar:
+//   - autoRenew kaldırıldı (dönem yenileme her zaman manuel)
+//   - PaymentAllocation kaldırıldı (dağılım ledger'ın içinde)
+//   - Para birimi Decimal -> Int (kuruş, minor unit)
+//   - Ledger append-only, reversal sistemi eklendi
+//   - PAYMENT_REVERSAL / MATERIAL_RETURN tipleri ayrıldı
+//
+// TEK GERÇEK KAYNAĞI:
+//   "Öğrencinin borcu ne?"      -> sadece FinancialTransaction
+//   "Bu dönemin fiyatı neydi?"  -> StudentPeriod.price (görüntüleme)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// AUTH & ROLLER
+// ------------------------------------------------------------
+
+enum Role {
+  OWNER
+  STAFF
+  STUDENT
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String? @unique
+  phone        String? @unique
+  passwordHash String?
+  role         Role
+
+  // Yetki kontrolü JWT'ye değil, her zaman bu satıra bakar.
+  // Pasife alınan personelin elindeki eski token işe yaramaz.
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  staffProfile   StaffProfile?
+  studentProfile StudentProfile?
+
+  auditLogs AuditLog[] @relation("AuditActor")
+
+  @@index([role])
+}
+
+model StaffProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  fullName  String
+  createdAt DateTime @default(now())
+}
+
+// ------------------------------------------------------------
+// ÖĞRENCİ
+// ------------------------------------------------------------
+
+enum StudentStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  LEFT
+  ARCHIVED
+}
+
+model StudentProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  fullName String
+  phone    String?
+
+  status StudentStatus @default(PENDING)
+
+  defaultGroupId String?
+  defaultGroup   LessonGroup? @relation(fields: [defaultGroupId], references: [id])
+
+  // Sadece "yeni dönem açarken önerilecek fiyat" (kuruş).
+  // null ise Settings.defaultPeriodPrice kullanılır.
+  // Finansal gerçek değil — gerçek her zaman ledger'da.
+  customPrice Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  periods       StudentPeriod[]
+  materialSales MaterialSale[]
+  payments      Payment[]
+  transactions  FinancialTransaction[]
+  auditLogs     AuditLog[]             @relation("AuditTargetStudent")
+
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// DERS GRUBU
+// ------------------------------------------------------------
+
+model LessonGroup {
+  id        String   @id @default(cuid())
+  dayOfWeek Int // 0=Pazar ... 6=Cumartesi
+  startTime String // "08:00"
+  endTime   String // "10:00"
+  label     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  students StudentProfile[]
+  periods  StudentPeriod[]
+}
+
+// ------------------------------------------------------------
+// DÖNEM (4 haftalık)
+// ------------------------------------------------------------
+
+enum PeriodStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model StudentPeriod {
+  id        String         @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+
+  groupId String
+  group   LessonGroup @relation(fields: [groupId], references: [id])
+
+  startDate DateTime
+  status    PeriodStatus @default(ACTIVE)
+
+  // Dönem açılırken donan fiyat (kuruş). Görüntüleme amaçlıdır:
+  // "bu dönemin fiyatı neydi?" sorusunun cevabı.
+  // Borç hesabına ASLA katılmaz — o iş ledger'ın.
+  //
+  // Bu alan sonradan düzeltilirse, aradaki fark kadar ADJUSTMENT
+  // transaction'ı yazılması service katmanında zorunludur.
+  price Int
+
+  // Dönem yenileme her zaman manuel olduğu için "nasıl açıldı"
+  // alanına gerek yok; kimin açtığı AuditLog'da zaten var.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessons      PeriodLesson[]
+  transactions FinancialTransaction[]
+
+  @@index([studentId, status])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  UNMARKED
+}
+
+model PeriodLesson {
+  id       String        @id @default(cuid())
+  periodId String
+  period   StudentPeriod @relation(fields: [periodId], references: [id])
+
+  lessonDate DateTime
+  weekNumber Int // 1-4
+
+  status   AttendanceStatus @default(UNMARKED)
+  markedAt DateTime?
+  markedBy String? // User.id
+
+  // Dönem tamamlanma kuralı (service katmanında):
+  //   4 dersin hiçbiri UNMARKED değilse -> period.status = COMPLETED
+  //   biri tekrar UNMARKED yapılırsa:
+  //     - öğrencinin sonraki dönemi YOKSA -> period.status = ACTIVE
+  //     - sonraki dönemi VARSA            -> engellenir (sadece OWNER düzeltebilir)
+
+  @@unique([periodId, weekNumber])
+}
+
+// ------------------------------------------------------------
+// MALZEME / ÜRÜN
+// ------------------------------------------------------------
+
+model Product {
+  id           String   @id @default(cuid())
+  name         String
+  defaultPrice Int // kuruş
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  sales MaterialSale[]
+}
+
+model MaterialSale {
+  id        String         @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  // Satış anındaki gerçek birim fiyat (kuruş). Sonradan değişmez.
+  unitPrice Int
+  quantity  Int @default(1)
+
+  soldById String // User.id
+  soldAt   DateTime @default(now())
+
+  transactions FinancialTransaction[]
+}
+
+// ------------------------------------------------------------
+// FİNANS DEFTERİ — APPEND ONLY
+// ------------------------------------------------------------
+// Bu tabloda UPDATE ve DELETE yoktur.
+// Hatalı kayıt silinmez; ters işaretli yeni bir kayıt yazılır ve
+// reversedTransactionId ile orijinaline bağlanır.
+// ------------------------------------------------------------
+
+enum TransactionType {
+  // --- Borç ARTIRANLAR (pozitif) ---
+  PERIOD_FEE // dönem ücreti
+  MATERIAL_SALE // malzeme satışı
+  MANUAL_CHARGE // elle eklenen borç
+  PAYMENT_REVERSAL // ödemenin iadesi/iptali -> ödemenin etkisini geri alır
+
+  // --- Borç AZALTANLAR (negatif) ---
+  PAYMENT // tahsilat
+  DISCOUNT // indirim
+  MATERIAL_RETURN // malzeme iadesi -> satışın etkisini geri alır
+
+  // --- Her iki yönde olabilir ---
+  ADJUSTMENT // düzeltme (fiyat farkı, hatalı kayıt telafisi vb.)
+}
+
+enum DebtCategory {
+  COURSE
+  MATERIAL
+  OTHER
+}
+
+model FinancialTransaction {
+  id        String         @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+
+  type     TransactionType
+  category DebtCategory
+
+  // Kuruş cinsinden, işaretli.
+  // Borcu artıran +, azaltan -. (Bkz. TransactionType grupları.)
+  amount Int
+
+  description String?
+
+  // --- Reversal zinciri ---
+  // Bu kayıt başka bir kaydı iptal ediyorsa dolu olur.
+  // @unique: bir kayıt yalnızca bir kez ters çevrilebilir.
+  reversedTransactionId String?               @unique
+  reversedTransaction   FinancialTransaction? @relation("Reversal", fields: [reversedTransactionId], references: [id])
+  reversalTransaction   FinancialTransaction? @relation("Reversal")
+
+  // --- Kaynak bağları: bu kayıt hangi olaydan doğdu ---
+  studentPeriodId String?
+  studentPeriod   StudentPeriod? @relation(fields: [studentPeriodId], references: [id])
+
+  materialSaleId String?
+  materialSale   MaterialSale? @relation(fields: [materialSaleId], references: [id])
+
+  // Bir ödeme birden fazla transaction üretebilir (kurs + malzeme dağılımı).
+  // Dağılım bilgisi burada yaşar; ayrı bir allocation tablosu yoktur.
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  createdById String // User.id
+  createdAt   DateTime @default(now())
+
+  @@index([studentId, category])
+  @@index([paymentId])
+}
+
+// ------------------------------------------------------------
+// ÖDEME
+// ------------------------------------------------------------
+// Payment = "şu kadar para elime geçti" başlık kaydı.
+// Paranın hangi borca gittiği FinancialTransaction'larda tutulur.
+// Değişmez kural: SUM(bu ödemenin transaction'ları) == -payment.amount
+// ------------------------------------------------------------
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+  OTHER
+}
+
+model Payment {
+  id        String         @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+
+  amount Int // kuruş, her zaman pozitif
+
+  method PaymentMethod @default(CASH)
+  note   String?
+
+  receivedById String // User.id
+  receivedAt   DateTime @default(now())
+
+  transactions FinancialTransaction[]
+
+  @@index([studentId])
+}
+
+// ------------------------------------------------------------
+// AYARLAR
+// ------------------------------------------------------------
+
+model Settings {
+  id                 String @id @default(cuid())
+  defaultPeriodPrice Int // kuruş
+
+  // Dashboard'daki borçlular listesi eşiği (kuruş).
+  // Bu tutarın üstünde borcu olan aktif öğrenciler listelenir.
+  debtAlertThreshold Int @default(500000) // 5000 TL
+
+  updatedAt DateTime @updatedAt
+}
+
+// ------------------------------------------------------------
+// AUDIT LOG
+// ------------------------------------------------------------
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorId String
+  actor   User   @relation("AuditActor", fields: [actorId], references: [id])
+
+  action String // "PERIOD_CREATED" | "PAYMENT_ADDED" | "TRANSACTION_REVERSED" ...
+
+  targetStudentId String?
+  targetStudent   StudentProfile? @relation("AuditTargetStudent", fields: [targetStudentId], references: [id])
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetStudentId])
+  @@index([createdAt])
+}
