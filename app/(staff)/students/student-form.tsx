@@ -4,15 +4,17 @@ import { useActionState } from "react";
 import { primaryButton } from "@/components/button-styles";
 import { FormField } from "@/components/form-field";
 import { FormMessage } from "@/components/form-message";
+import { SelectField } from "@/components/select-field";
 import type { FormState } from "@/lib/action-state";
 
 type StudentFormProps = {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   initialValues?: Record<string, string>;
+  groupOptions: { value: string; label: string }[];
   submitLabel: string;
 };
 
-export function StudentForm({ action, initialValues = {}, submitLabel }: StudentFormProps) {
+export function StudentForm({ action, initialValues = {}, groupOptions, submitLabel }: StudentFormProps) {
   const [state, formAction, isPending] = useActionState(action, {});
   const values = state.values ?? initialValues;
 
@@ -39,6 +41,16 @@ export function StudentForm({ action, initialValues = {}, submitLabel }: Student
         defaultValue={values.email}
         errors={state.fieldErrors?.email}
         hint="İsteğe bağlı."
+      />
+      <SelectField
+        // React, form action sonrası select'i sıfırladığı için seçim key ile geri yüklenir.
+        key={values.defaultGroupId}
+        label="Varsayılan grup"
+        name="defaultGroupId"
+        options={groupOptions}
+        placeholder="Grup yok"
+        defaultValue={values.defaultGroupId ?? ""}
+        errors={state.fieldErrors?.defaultGroupId}
       />
       <FormField
         label="Özel dönem ücreti (TL)"

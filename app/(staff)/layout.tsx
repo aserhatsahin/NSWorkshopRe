@@ -2,7 +2,10 @@ import { Suspense, type ReactNode } from "react";
 import { AppHeader } from "@/components/app-header";
 import { requireRole } from "@/lib/auth/session";
 
-const NAV_LINKS = [{ href: "/students", label: "Öğrenciler" }];
+const NAV_LINKS = [
+  { href: "/students", label: "Öğrenciler" },
+  { href: "/groups", label: "Gruplar" },
+];
 
 export default function StaffLayout({ children }: { children: ReactNode }) {
   return (

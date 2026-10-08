@@ -22,6 +22,7 @@ function readStudentForm(formData: FormData) {
     phone: formData.get("phone"),
     email: formData.get("email"),
     customPrice: formData.get("customPrice"),
+    defaultGroupId: formData.get("defaultGroupId"),
   });
 }
 

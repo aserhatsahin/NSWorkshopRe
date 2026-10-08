@@ -21,15 +21,34 @@ const studentSelect = {
   customPrice: true,
   createdAt: true,
   user: { select: { email: true } },
+  defaultGroup: { select: { id: true, dayOfWeek: true, startTime: true, endTime: true, label: true } },
 } satisfies Prisma.StudentProfileSelect;
 
 export type StudentSummary = Prisma.StudentProfileGetPayload<{ select: typeof studentSelect }>;
+
+// Pasif gruba yeni öğrenci atanmaz; ama öğrencinin zaten bulunduğu grup
+// sonradan pasife alındıysa kaydı düzenlemek engellenmez.
+async function assertAssignableGroup(
+  tx: Prisma.TransactionClient,
+  groupId: string | null,
+  currentGroupId: string | null,
+): Promise<void> {
+  if (groupId === null || groupId === currentGroupId) {
+    return;
+  }
+  const group = await tx.lessonGroup.findUnique({ where: { id: groupId }, select: { isActive: true } });
+  if (!group || !group.isActive) {
+    throw new DomainError("Seçilen grup bulunamadı ya da pasif.");
+  }
+}
 
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
-export async function listStudents(filter: { status?: StudentStatus; query?: string } = {}): Promise<StudentSummary[]> {
+export async function listStudents(
+  filter: { status?: StudentStatus; query?: string; groupId?: string } = {},
+): Promise<StudentSummary[]> {
   await requirePermission("student.view");
 
   const query = filter.query?.trim();
@@ -39,6 +58,7 @@ export async function listStudents(filter: { status?: StudentStatus; query?: str
       // Durum seçilmediyse arşiv gizlenir; arşivi görmek bilinçli bir seçim olmalı.
       status: filter.status ?? { not: "ARCHIVED" },
       ...(query ? { fullName: { contains: query, mode: "insensitive" } } : {}),
+      ...(filter.groupId ? { defaultGroupId: filter.groupId } : {}),
     },
     orderBy: [{ fullName: "asc" }],
     select: studentSelect,
@@ -59,6 +79,8 @@ export async function createStudent(input: StudentFormInput): Promise<{ id: stri
 
   try {
     return await prisma.$transaction(async (tx) => {
+      await assertAssignableGroup(tx, input.defaultGroupId, null);
+
       const user = await tx.user.create({
         data: {
           role: "STUDENT",
@@ -68,6 +90,7 @@ export async function createStudent(input: StudentFormInput): Promise<{ id: stri
               fullName: input.fullName,
               phone: input.phone,
               customPrice: input.customPrice,
+              defaultGroupId: input.defaultGroupId,
               status: "ACTIVE",
             },
           },
@@ -137,15 +160,29 @@ export async function updateStudent(id: string, input: StudentFormInput): Promis
     await prisma.$transaction(async (tx) => {
       const current = await tx.studentProfile.findUnique({
         where: { id },
-        select: { userId: true, fullName: true, phone: true, customPrice: true, user: { select: { email: true } } },
+        select: {
+          userId: true,
+          fullName: true,
+          phone: true,
+          customPrice: true,
+          defaultGroupId: true,
+          user: { select: { email: true } },
+        },
       });
       if (!current) {
         throw new DomainError(NOT_FOUND);
       }
 
+      await assertAssignableGroup(tx, input.defaultGroupId, current.defaultGroupId);
+
       await tx.studentProfile.update({
         where: { id },
-        data: { fullName: input.fullName, phone: input.phone, customPrice: input.customPrice },
+        data: {
+          fullName: input.fullName,
+          phone: input.phone,
+          customPrice: input.customPrice,
+          defaultGroupId: input.defaultGroupId,
+        },
       });
 
       if (input.email !== current.user.email) {
@@ -162,6 +199,7 @@ export async function updateStudent(id: string, input: StudentFormInput): Promis
             phone: current.phone,
             email: current.user.email,
             customPrice: current.customPrice,
+            defaultGroupId: current.defaultGroupId,
           },
           after: { ...input },
         },

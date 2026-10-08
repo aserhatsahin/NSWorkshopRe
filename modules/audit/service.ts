@@ -5,7 +5,9 @@ export type AuditAction =
   | "STUDENT_CREATED"
   | "STUDENT_UPDATED"
   | "STUDENT_APPROVED"
-  | "STUDENT_STATUS_CHANGED";
+  | "STUDENT_STATUS_CHANGED"
+  | "GROUP_CREATED"
+  | "GROUP_UPDATED";
 
 type AuditEntry = {
   actorId: string;

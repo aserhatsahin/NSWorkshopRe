@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { primaryButton, secondaryButton } from "@/components/button-styles";
 import type { StudentStatus } from "@/lib/generated/prisma/client";
+import { formatGroupName } from "@/modules/groups/format";
 import { listStudents } from "@/modules/students/service";
 import { isStudentStatus, STUDENT_STATUS_LABELS } from "@/modules/students/status";
 
@@ -104,7 +105,9 @@ async function StudentList({ searchParams }: { searchParams: SearchParams }) {
                 <span className="flex flex-col">
                   <span className="font-medium">{student.fullName}</span>
                   <span className="text-sm text-zinc-500">
-                    {[student.phone, student.user.email].filter(Boolean).join(" · ") || "İletişim bilgisi yok"}
+                    {[student.defaultGroup && formatGroupName(student.defaultGroup), student.phone, student.user.email]
+                      .filter(Boolean)
+                      .join(" · ") || "Grup ve iletişim bilgisi yok"}
                   </span>
                 </span>
                 <span className="shrink-0 text-sm text-zinc-500">{STUDENT_STATUS_LABELS[student.status]}</span>
