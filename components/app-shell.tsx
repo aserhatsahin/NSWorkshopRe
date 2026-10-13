@@ -6,7 +6,12 @@ import { logoutAction } from "@/modules/auth/actions";
 import { SidebarLinks, TabBarLinks, type NavItem } from "./nav-links";
 import { ThemeToggle } from "./theme-toggle";
 
-type AppShellProps = { items: NavItem[]; children: ReactNode };
+type AppShellProps = {
+  items: NavItem[];
+  // Yalnızca atölye sahibi oturumunda menüye eklenir.
+  ownerItems?: NavItem[];
+  children: ReactNode;
+};
 
 function BrushStroke() {
   return (
@@ -45,7 +50,7 @@ function LogoutButton({ className }: { className: string }) {
 }
 
 // Bilgisayarda solda sabit menü, telefonda üstte ince başlık ve altta sekme çubuğu.
-export function AppShell({ items, children }: AppShellProps) {
+export function AppShell({ items, ownerItems = [], children }: AppShellProps) {
   return (
     <div className="flex flex-1 flex-col md:flex-row">
       <aside className="hidden w-56 shrink-0 flex-col gap-1 bg-nav p-4 md:flex">
@@ -60,7 +65,7 @@ export function AppShell({ items, children }: AppShellProps) {
         <nav aria-label="Ana menü" className="flex flex-col gap-1">
           {/* usePathname istek anında bilinir; Suspense olmadan dinamik rotalarda prerender'ı engeller. */}
           <Suspense fallback={null}>
-            <SidebarLinks items={items} />
+            <RoleLinks variant="sidebar" items={items} ownerItems={ownerItems} />
           </Suspense>
         </nav>
         <div className="mt-auto flex flex-col gap-3 px-3 pt-6 text-sm text-nav-fg">
@@ -86,14 +91,30 @@ export function AppShell({ items, children }: AppShellProps) {
       <main className="mx-auto w-full max-w-4xl flex-1 p-4 pb-24 md:p-8 md:pb-8">{children}</main>
 
       {items.length > 1 ? (
-        <nav aria-label="Ana menü" className="fixed inset-x-0 bottom-0 z-10 flex bg-nav px-1 md:hidden">
+        <nav aria-label="Ana menü" className="fixed inset-x-0 bottom-0 z-10 flex overflow-x-auto bg-nav px-1 md:hidden">
           <Suspense fallback={null}>
-            <TabBarLinks items={items} />
+            <RoleLinks variant="tabbar" items={items} ownerItems={ownerItems} />
           </Suspense>
         </nav>
       ) : null}
     </div>
   );
+}
+
+// Menü yalnızca kolaylıktır: OWNER sayfaları ayrıca layout guard'ı ve
+// service içindeki requirePermission ile korunur.
+async function RoleLinks({
+  variant,
+  items,
+  ownerItems,
+}: {
+  variant: "sidebar" | "tabbar";
+  items: NavItem[];
+  ownerItems: NavItem[];
+}) {
+  const user = await getCurrentUser();
+  const visible = user?.role === "OWNER" ? [...items, ...ownerItems] : items;
+  return variant === "sidebar" ? <SidebarLinks items={visible} /> : <TabBarLinks items={visible} />;
 }
 
 async function CurrentUserEmail() {

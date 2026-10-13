@@ -1,6 +1,16 @@
 "use client";
 
-import { CalendarDays, ClipboardCheck, Home, LayoutDashboard, Palette, Users, type LucideIcon } from "lucide-react";
+import {
+  CalendarDays,
+  ClipboardCheck,
+  Home,
+  LayoutDashboard,
+  Palette,
+  Settings,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,6 +21,8 @@ const ICONS = {
   groups: CalendarDays,
   products: Palette,
   home: Home,
+  finance: Wallet,
+  settings: Settings,
 } satisfies Record<string, LucideIcon>;
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
@@ -58,7 +70,7 @@ export function TabBarLinks({ items }: { items: NavItem[] }) {
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={`flex flex-1 flex-col items-center gap-1 py-2 text-[11px] ${
+            className={`flex min-w-16 flex-1 flex-col items-center gap-1 py-2 text-[11px] ${
               active ? "font-medium text-p-ochre" : "text-nav-fg"
             }`}
           >

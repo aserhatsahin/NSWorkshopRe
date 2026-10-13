@@ -1,19 +1,11 @@
 import { Suspense, type ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
-import type { NavItem } from "@/components/nav-links";
+import { OWNER_NAV_ITEMS, STAFF_NAV_ITEMS } from "@/components/nav-items";
 import { requireRole } from "@/lib/auth/session";
-
-const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Pano", icon: "dashboard" },
-  { href: "/attendance", label: "Yoklama", icon: "attendance" },
-  { href: "/students", label: "Öğrenciler", icon: "students" },
-  { href: "/groups", label: "Gruplar", icon: "groups" },
-  { href: "/products", label: "Malzeme", icon: "products" },
-];
 
 export default function StaffLayout({ children }: { children: ReactNode }) {
   return (
-    <AppShell items={NAV_ITEMS}>
+    <AppShell items={STAFF_NAV_ITEMS} ownerItems={OWNER_NAV_ITEMS}>
       <Suspense fallback={<p className="text-muted">Yükleniyor…</p>}>
         <StaffOnly>{children}</StaffOnly>
       </Suspense>
