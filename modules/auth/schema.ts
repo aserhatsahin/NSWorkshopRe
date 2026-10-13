@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+// identifier e-posta ya da kullanıcı adı olabilir; hangisi olduğuna
+// modules/auth/username.ts içindeki parseLoginIdentifier karar verir.
 export const loginSchema = z.object({
-  email: z.email().trim().toLowerCase(),
+  identifier: z.string().trim().min(1).max(200),
   password: z.string().min(1).max(200),
 });
 

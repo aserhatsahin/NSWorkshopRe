@@ -8,7 +8,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
-      credentials: { email: {}, password: {} },
+      credentials: { identifier: {}, password: {} },
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) {

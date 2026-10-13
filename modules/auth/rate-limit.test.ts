@@ -50,13 +50,13 @@ describe("giriş deneme sınırı", () => {
   });
 
   it("hatalı şifre denemeyi kaydeder", async () => {
-    await expect(authenticate({ email: activeUser.email, password: "yanlis" })).resolves.toBeNull();
+    await expect(authenticate({ identifier: activeUser.email, password: "yanlis" })).resolves.toBeNull();
 
     expect(mocks.create).toHaveBeenCalledWith({ data: { key: "login:kisi@example.test" } });
   });
 
   it("doğru şifre sayacı sıfırlar", async () => {
-    await expect(authenticate({ email: activeUser.email, password: "dogru-sifre-123" })).resolves.toMatchObject({ id: "u1" });
+    await expect(authenticate({ identifier: activeUser.email, password: "dogru-sifre-123" })).resolves.toMatchObject({ id: "u1" });
 
     expect(mocks.create).not.toHaveBeenCalled();
     expect(mocks.deleteMany).toHaveBeenCalledWith({ where: { key: "login:kisi@example.test" } });
@@ -65,8 +65,30 @@ describe("giriş deneme sınırı", () => {
   it("sınır aşıldıysa doğru şifre de reddedilir ve kullanıcı hiç sorgulanmaz", async () => {
     mocks.count.mockResolvedValue(LOGIN_LIMIT.maxAttempts);
 
-    await expect(authenticate({ email: activeUser.email, password: "dogru-sifre-123" })).resolves.toBeNull();
+    await expect(authenticate({ identifier: activeUser.email, password: "dogru-sifre-123" })).resolves.toBeNull();
     expect(mocks.findUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("giriş kimliği", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mocks.count.mockResolvedValue(0);
+    mocks.findUser.mockResolvedValue({ ...activeUser, email: null });
+  });
+
+  it("@ içeren metinle e-postaya göre arar", async () => {
+    await authenticate({ identifier: " Kisi@Example.TEST ", password: "dogru-sifre-123" });
+    expect(mocks.findUser).toHaveBeenCalledWith(expect.objectContaining({ where: { email: "kisi@example.test" } }));
+  });
+
+  it("@ içermeyen metinle kullanıcı adına göre arar ve giriş yapar", async () => {
+    await expect(authenticate({ identifier: "AYŞE_IŞIK", password: "dogru-sifre-123" })).resolves.toMatchObject({ id: "u1" });
+    expect(mocks.findUser).toHaveBeenCalledWith(expect.objectContaining({ where: { username: "ayşe_ışık" } }));
+  });
+
+  it("kullanıcı adının büyük/küçük hali aynı sayaca yazılır", () => {
+    expect(loginKey("AYŞE_IŞIK")).toBe(loginKey("ayşe_ışık"));
   });
 });
 
