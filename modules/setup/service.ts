@@ -39,7 +39,8 @@ export async function createInitialOwner(input: SetupInput): Promise<void> {
 
   await prisma.$transaction(async (tx) => {
     // Aynı anda gelen iki kurulum isteğinden yalnızca biri geçsin.
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('nsworkshop-setup'))`;
+    // $executeRaw: fonksiyon `void` döner ve $queryRaw bu tipi okuyamaz.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('nsworkshop-setup'))`;
 
     if ((await tx.user.count({ where: { role: "OWNER" } })) > 0) {
       throw new DomainError("Kurulum zaten yapılmış.");
