@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   "student.create": ["OWNER", "STAFF"],
   "student.update": ["OWNER", "STAFF"],
   "student.setPassword": ["OWNER", "STAFF"],
+  "student.managePhoto": ["OWNER", "STAFF"],
   "student.approve": ["OWNER", "STAFF"],
   "student.changeStatus": ["OWNER", "STAFF"],
   "group.view": ["OWNER", "STAFF"],
