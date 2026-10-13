@@ -1,17 +1,17 @@
 import { Suspense, type ReactNode } from "react";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
+import type { NavItem } from "@/components/nav-links";
 import { requireRole } from "@/lib/auth/session";
+
+const NAV_ITEMS: NavItem[] = [{ href: "/panel", label: "Panelim", icon: "home" }];
 
 export default function StudentLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col">
-      <AppHeader />
-      <main className="mx-auto w-full max-w-2xl flex-1 p-6">
-        <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
-          <StudentOnly>{children}</StudentOnly>
-        </Suspense>
-      </main>
-    </div>
+    <AppShell items={NAV_ITEMS}>
+      <Suspense fallback={<p className="text-muted">Yükleniyor…</p>}>
+        <StudentOnly>{children}</StudentOnly>
+      </Suspense>
+    </AppShell>
   );
 }
 

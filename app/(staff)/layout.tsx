@@ -1,24 +1,22 @@
 import { Suspense, type ReactNode } from "react";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
+import type { NavItem } from "@/components/nav-links";
 import { requireRole } from "@/lib/auth/session";
 
-const NAV_LINKS = [
-  { href: "/attendance", label: "Yoklama" },
-  { href: "/students", label: "Öğrenciler" },
-  { href: "/groups", label: "Gruplar" },
-  { href: "/products", label: "Ürünler" },
+const NAV_ITEMS: NavItem[] = [
+  { href: "/attendance", label: "Yoklama", icon: "attendance" },
+  { href: "/students", label: "Öğrenciler", icon: "students" },
+  { href: "/groups", label: "Gruplar", icon: "groups" },
+  { href: "/products", label: "Malzeme", icon: "products" },
 ];
 
 export default function StaffLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col">
-      <AppHeader links={NAV_LINKS} />
-      <main className="mx-auto w-full max-w-4xl flex-1 p-6">
-        <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
-          <StaffOnly>{children}</StaffOnly>
-        </Suspense>
-      </main>
-    </div>
+    <AppShell items={NAV_ITEMS}>
+      <Suspense fallback={<p className="text-muted">Yükleniyor…</p>}>
+        <StaffOnly>{children}</StaffOnly>
+      </Suspense>
+    </AppShell>
   );
 }
 
