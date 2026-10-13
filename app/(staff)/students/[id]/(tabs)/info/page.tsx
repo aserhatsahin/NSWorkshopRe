@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { DeleteButton } from "@/components/delete-button";
 import { PasswordForm } from "@/components/password-form";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { kurusToLiraInput } from "@/lib/money";
@@ -10,10 +11,11 @@ import { removeStudentPhotoAction, setStudentPhotoAction } from "@/modules/photo
 import {
   approveStudentAction,
   changeStudentStatusAction,
+  deleteStudentAction,
   setStudentPasswordAction,
   updateStudentAction,
 } from "@/modules/students/actions";
-import { getStudent, getStudentLogin } from "@/modules/students/service";
+import { getStudent, getStudentLogin, isStudentDeletable } from "@/modules/students/service";
 import { allowedStatusTransitions } from "@/modules/students/status";
 import { StudentForm } from "../../../student-form";
 import { StatusActions } from "../status-actions";
@@ -37,7 +39,11 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
     notFound();
   }
 
-  const [activeGroups, login] = await Promise.all([listGroups({ activeOnly: true }), getStudentLogin(student.id)]);
+  const [activeGroups, login, deletable] = await Promise.all([
+    listGroups({ activeOnly: true }),
+    getStudentLogin(student.id),
+    isStudentDeletable(student.id),
+  ]);
   const groupOptions = activeGroups.map((group) => ({ value: group.id, label: formatGroupName(group) }));
   // Öğrencinin grubu sonradan pasife alındıysa seçenek olarak kalmalı,
   // yoksa form kaydedilince grup sessizce silinir.
@@ -113,6 +119,28 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
           <p className="max-w-md text-sm text-muted">
             Öğrencinin panele girebilmesi için önce yukarıdan bir e-posta ya da kullanıcı adı ekleyip kaydet; sonra
             burada şifre verebilirsin.
+          </p>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="font-display text-xl">Kaydı sil</h2>
+        {deletable ? (
+          <>
+            <p className="max-w-md text-sm text-muted">
+              Bu öğrencinin hiç dönemi, ödemesi ya da borç kaydı yok. Yanlışlıkla ya da deneme için eklendiyse tamamen
+              silebilirsin.
+            </p>
+            <DeleteButton
+              label="Öğrenciyi sil"
+              description={`${student.fullName} adlı öğrencinin kaydı ve giriş hesabı silinecek.`}
+              action={deleteStudentAction.bind(null, student.id)}
+            />
+          </>
+        ) : (
+          <p className="max-w-md text-sm text-muted">
+            Bu öğrencinin dönemi ya da finans kaydı olduğu için silinemez; ödemeleri atölyenin gelir kaydı. Artık
+            gelmeyecekse durumunu &quot;Ayrıldı&quot; yapıp arşivleyebilirsin.
           </p>
         )}
       </section>

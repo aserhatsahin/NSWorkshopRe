@@ -11,10 +11,18 @@ type StudentFormProps = {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   initialValues?: Record<string, string>;
   groupOptions: { value: string; label: string }[];
+  // Yalnızca yeni öğrenci eklerken ilk şifre de sorulur.
+  withPassword?: boolean;
   submitLabel: string;
 };
 
-export function StudentForm({ action, initialValues = {}, groupOptions, submitLabel }: StudentFormProps) {
+export function StudentForm({
+  action,
+  initialValues = {},
+  groupOptions,
+  withPassword = false,
+  submitLabel,
+}: StudentFormProps) {
   const [state, formAction, isPending] = useActionState(action, {});
   const values = state.values ?? initialValues;
 
@@ -51,6 +59,17 @@ export function StudentForm({ action, initialValues = {}, groupOptions, submitLa
         errors={state.fieldErrors?.username}
         hint="İsteğe bağlı. E-postası olmayan öğrenci panele bununla girer."
       />
+      {withPassword ? (
+        <FormField
+          label="İlk şifre"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          errors={state.fieldErrors?.password}
+          hint="İsteğe bağlı, en az 8 karakter. Yazarsan öğrenci e-postası ya da kullanıcı adıyla hemen girebilir; şifreyi ona sen iletirsin. Boş bırakırsan sonradan Bilgiler sekmesinden verebilirsin."
+        />
+      ) : null}
       <SelectField
         // React, form action sonrası select'i sıfırladığı için seçim key ile geri yüklenir.
         key={values.defaultGroupId}

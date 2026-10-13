@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { primaryButton } from "@/components/button-styles";
 import { formatKurus } from "@/lib/money";
-import { listProducts } from "@/modules/materials/service";
+import { listProducts, type ProductSummary } from "@/modules/materials/service";
 
 export const metadata: Metadata = { title: "Ürünler" };
 
@@ -30,6 +30,23 @@ async function ProductList() {
     return <p className="text-muted">Henüz ürün yok.</p>;
   }
 
+  const active = products.filter((product) => product.isActive);
+  const inactive = products.filter((product) => !product.isActive);
+
+  return (
+    <>
+      {active.length > 0 ? <ProductRows products={active} /> : <p className="text-muted">Aktif ürün yok.</p>}
+      {inactive.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-xl text-muted">Pasif ürünler</h2>
+          <ProductRows products={inactive} />
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+function ProductRows({ products }: { products: ProductSummary[] }) {
   return (
     <ul className="list">
       {products.map((product) => (

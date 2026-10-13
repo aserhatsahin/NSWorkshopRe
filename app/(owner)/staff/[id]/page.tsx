@@ -3,10 +3,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ActiveToggle } from "@/components/active-toggle";
+import { DeleteButton } from "@/components/delete-button";
 import { PasswordForm } from "@/components/password-form";
 import { Badge } from "@/components/status-badge";
-import { resetStaffPasswordAction, setStaffActiveAction, updateStaffAction } from "@/modules/staff/actions";
-import { getStaffMember } from "@/modules/staff/service";
+import {
+  deleteStaffAction,
+  resetStaffPasswordAction,
+  setStaffActiveAction,
+  updateStaffAction,
+} from "@/modules/staff/actions";
+import { getStaffMember, isStaffDeletable } from "@/modules/staff/service";
 import { StaffForm } from "../staff-form";
 
 export const metadata: Metadata = { title: "Personel" };
@@ -32,6 +38,7 @@ async function StaffDetail({ params }: StaffPageProps) {
   if (!member) {
     notFound();
   }
+  const deletable = await isStaffDeletable(member.id);
 
   return (
     <>
@@ -73,6 +80,27 @@ async function StaffDetail({ params }: StaffPageProps) {
           isActive={member.isActive}
           action={setStaffActiveAction.bind(null, member.id, !member.isActive)}
         />
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="font-display text-xl">Hesabı sil</h2>
+        {deletable ? (
+          <>
+            <p className="max-w-md text-sm text-muted">
+              Bu hesap sistemde hiç işlem yapmamış. Yanlışlıkla açıldıysa tamamen silebilirsin.
+            </p>
+            <DeleteButton
+              label="Hesabı sil"
+              description={`${member.fullName} adlı personelin hesabı silinecek.`}
+              action={deleteStaffAction.bind(null, member.id)}
+            />
+          </>
+        ) : (
+          <p className="max-w-md text-sm text-muted">
+            Bu personel sistemde işlem yaptığı için hesabı silinemez; geçmiş kayıtlarda adı geçiyor. Artık çalışmıyorsa
+            pasife al.
+          </p>
+        )}
       </section>
     </>
   );

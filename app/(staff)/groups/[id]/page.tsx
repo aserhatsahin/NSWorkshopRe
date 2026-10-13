@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ActiveToggle } from "@/components/active-toggle";
-import { setGroupActiveAction, updateGroupAction } from "@/modules/groups/actions";
+import { DeleteButton } from "@/components/delete-button";
+import { deleteGroupAction, setGroupActiveAction, updateGroupAction } from "@/modules/groups/actions";
 import { formatGroupName } from "@/modules/groups/format";
-import { getGroup } from "@/modules/groups/service";
+import { getGroup, isGroupDeletable } from "@/modules/groups/service";
 import { listStudents } from "@/modules/students/service";
 import { STUDENT_STATUS_LABELS } from "@/modules/students/status";
 import { GroupForm } from "../group-form";
@@ -90,6 +91,27 @@ async function GroupDetail({ params }: GroupPageProps) {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="font-display text-xl">Grubu sil</h2>
+        {isGroupDeletable(group) ? (
+          <>
+            <p className="max-w-md text-sm text-muted">
+              Bu grubun hiç öğrencisi ve dönemi yok. Yanlışlıkla açıldıysa tamamen silebilirsin.
+            </p>
+            <DeleteButton
+              label="Grubu sil"
+              description={`"${formatGroupName(group)}" grubu silinecek.`}
+              action={deleteGroupAction.bind(null, group.id)}
+            />
+          </>
+        ) : (
+          <p className="max-w-md text-sm text-muted">
+            Bu grubun öğrencisi ya da geçmiş dönemi olduğu için silinemez. Artık kullanılmayacaksa pasife al; geçmiş
+            kayıtlar yerinde kalır.
+          </p>
         )}
       </section>
     </>

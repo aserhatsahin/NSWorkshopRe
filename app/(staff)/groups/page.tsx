@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { primaryButton } from "@/components/button-styles";
 import { formatGroupName, formatGroupSchedule } from "@/modules/groups/format";
-import { listGroups } from "@/modules/groups/service";
+import { listGroups, type GroupSummary } from "@/modules/groups/service";
 
 export const metadata: Metadata = { title: "Gruplar" };
 
@@ -30,6 +30,23 @@ async function GroupList() {
     return <p className="text-muted">Henüz grup yok.</p>;
   }
 
+  const active = groups.filter((group) => group.isActive);
+  const inactive = groups.filter((group) => !group.isActive);
+
+  return (
+    <>
+      {active.length > 0 ? <GroupRows groups={active} /> : <p className="text-muted">Aktif grup yok.</p>}
+      {inactive.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-xl text-muted">Pasif gruplar</h2>
+          <GroupRows groups={inactive} />
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+function GroupRows({ groups }: { groups: GroupSummary[] }) {
   return (
     <ul className="list">
       {groups.map((group) => (
@@ -43,7 +60,7 @@ async function GroupList() {
               {group.label ? <span className="text-sm text-muted">{formatGroupSchedule(group)}</span> : null}
             </span>
             <span className="shrink-0 text-sm text-muted">
-              {group._count.students} öğrenci{group.isActive ? "" : " · Pasif"}
+              {group._count.students} öğrenci
             </span>
           </Link>
         </li>
