@@ -1,9 +1,9 @@
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
 import { DomainError } from "@/lib/errors";
 import { Prisma, type StudentStatus } from "@/lib/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions/guard";
 import { logAudit } from "@/modules/audit/service";
+import { hashPassword } from "@/modules/auth/password";
 import type { RegisterInput, StudentFormInput } from "./schema";
 import { canChangeStatus } from "./status";
 
@@ -121,7 +121,7 @@ export async function createStudent(input: StudentFormInput): Promise<{ id: stri
 // Oturumsuz çağrılır (öğrencinin kendi kaydı), bu yüzden yetki kontrolü yok.
 // Hesap PENDING açılır; personel onaylayana kadar hiçbir veri göremez.
 export async function registerStudent(input: RegisterInput): Promise<void> {
-  const passwordHash = await bcrypt.hash(input.password, 12);
+  const passwordHash = await hashPassword(input.password);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -271,5 +271,42 @@ export async function changeStudentStatus(id: string, to: StudentStatus): Promis
       targetStudentId: id,
       metadata: { from: student.status, to },
     });
+  });
+}
+
+export type StudentLogin = { email: string | null; hasPassword: boolean };
+
+// Hash dışarı verilmez; yalnızca şifresinin olup olmadığı.
+export async function getStudentLogin(studentId: string): Promise<StudentLogin | null> {
+  await requirePermission("student.view");
+
+  const student = await prisma.studentProfile.findUnique({
+    where: { id: studentId },
+    select: { user: { select: { email: true, passwordHash: true } } },
+  });
+  return student ? { email: student.user.email, hasPassword: student.user.passwordHash !== null } : null;
+}
+
+// Personelin eklediği öğrencinin şifresi olmaz; panele girebilmesi için
+// şifre buradan verilir. Giriş e-postayla yapıldığı için e-posta şarttır.
+export async function setStudentPassword(studentId: string, password: string): Promise<void> {
+  const actor = await requirePermission("student.setPassword");
+  const passwordHash = await hashPassword(password);
+
+  await prisma.$transaction(async (tx) => {
+    const student = await tx.studentProfile.findUnique({
+      where: { id: studentId },
+      select: { userId: true, user: { select: { email: true } } },
+    });
+    if (!student) {
+      throw new DomainError(NOT_FOUND);
+    }
+    if (!student.user.email) {
+      throw new DomainError("Şifre vermek için önce öğrenciye bir e-posta ekle.");
+    }
+
+    await tx.user.update({ where: { id: student.userId }, data: { passwordHash } });
+    // Şifre ya da hash'i log'a yazılmaz.
+    await logAudit(tx, { actorId: actor.id, action: "STUDENT_PASSWORD_SET", targetStudentId: studentId });
   });
 }

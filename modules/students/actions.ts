@@ -6,12 +6,14 @@ import { AuthError } from "next-auth";
 import { z } from "zod";
 import { formValues, toErrorMessage, type FormState } from "@/lib/action-state";
 import { signIn } from "@/lib/auth";
+import { passwordSchema } from "@/modules/auth/password";
 import { registerSchema, studentFormSchema } from "./schema";
 import {
   approveStudent,
   changeStudentStatus,
   createStudent,
   registerStudent,
+  setStudentPassword,
   updateStudent,
 } from "./service";
 import { isStudentStatus } from "./status";
@@ -128,4 +130,24 @@ export async function registerStudentAction(_previous: FormState, formData: Form
   }
 
   return {};
+}
+
+export async function setStudentPasswordAction(
+  studentId: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const parsed = z.object({ password: passwordSchema }).safeParse({ password: formData.get("password") });
+  if (!parsed.success) {
+    return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
+  }
+
+  try {
+    await setStudentPassword(studentId, parsed.data.password);
+  } catch (error) {
+    return { error: toErrorMessage(error) };
+  }
+
+  refresh();
+  return { success: "Şifre kaydedildi." };
 }

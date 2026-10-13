@@ -12,5 +12,6 @@ export const STAFF_NAV_ITEMS: NavItem[] = [
 
 export const OWNER_NAV_ITEMS: NavItem[] = [
   { href: "/finance", label: "Finans", icon: "finance" },
+  { href: "/staff", label: "Personel", icon: "staff" },
   { href: "/settings", label: "Ayarlar", icon: "settings" },
 ];
