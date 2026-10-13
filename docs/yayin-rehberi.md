@@ -46,8 +46,8 @@ openssl rand -base64 32
    npm run vercel-build
    ```
 
-   Bu komut her yayında önce veritabanı değişikliklerini uygular, sonra
-   uygulamayı derler.
+   Bu komut canlı yayında önce veritabanı değişikliklerini uygular, sonra
+   uygulamayı derler. Deneme (Preview) yayınlarında veritabanına dokunmaz.
 3. **Environment Variables** bölümüne şu dört değişkeni ekle:
 
    | Ad | Değer |
@@ -57,8 +57,13 @@ openssl rand -base64 32
    | `AUTH_SECRET` | 2. adımdaki ilk değer |
    | `SETUP_TOKEN` | 2. adımdaki ikinci değer |
 
-   `SEED_*` ile başlayan değişkenleri **ekleme**; onlar yalnızca yerel
-   geliştirme içindir.
+   Her değişkenin altındaki **Environments** kutusunda yalnızca
+   **Production** seçili olsun; "Preview"u kaldır. Preview, henüz
+   birleştirilmemiş PR'ların deneme yayınlarıdır ve canlı veritabanına
+   bağlanmamalıdır.
+
+   "Import .env" düğmesini **kullanma**; bilgisayarındaki `.env` yerel test
+   değerlerini içerir. `SEED_*` ile başlayan değişkenleri de ekleme.
 4. **Deploy**'a bas. Birkaç dakika sürer. Bitince Vercel sana
    `nsworkshop-xxx.vercel.app` gibi bir adres verir.
 
