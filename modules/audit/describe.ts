@@ -27,6 +27,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   STAFF_UPDATED: "Personel güncellendi",
   STAFF_PASSWORD_RESET: "Personel şifresi değiştirildi",
   PASSWORD_CHANGED: "Kullanıcı kendi şifresini değiştirdi",
+  WORKSHOP_SETUP: "İlk kurulum yapıldı",
 };
 
 export const AUDIT_CATEGORIES = {
@@ -48,7 +49,7 @@ export const AUDIT_CATEGORIES = {
   },
   admin: {
     label: "Yönetim",
-    actions: ["GROUP_CREATED", "GROUP_UPDATED", "SETTINGS_UPDATED", "STAFF_CREATED", "STAFF_UPDATED", "STAFF_PASSWORD_RESET", "PASSWORD_CHANGED"],
+    actions: ["GROUP_CREATED", "GROUP_UPDATED", "SETTINGS_UPDATED", "STAFF_CREATED", "STAFF_UPDATED", "STAFF_PASSWORD_RESET", "PASSWORD_CHANGED", "WORKSHOP_SETUP"],
   },
 } as const satisfies Record<string, { label: string; actions: readonly AuditAction[] }>;
 
