@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseLiraToKurus } from "@/lib/money";
+import { passwordSchema } from "@/modules/auth/password";
 
 function emptyToNull(value: unknown): unknown {
   return typeof value === "string" && value.trim() === "" ? null : value;
@@ -50,10 +51,7 @@ export const registerSchema = z.object({
   fullName,
   phone: optionalPhone,
   email: z.email("Geçerli bir e-posta gir.").trim().toLowerCase(),
-  password: z
-    .string()
-    .min(8, "Şifre en az 8 karakter olmalı.")
-    .max(200, "Şifre en fazla 200 karakter olabilir."),
+  password: passwordSchema,
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

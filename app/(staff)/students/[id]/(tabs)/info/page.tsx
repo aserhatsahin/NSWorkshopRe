@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { PasswordForm } from "@/components/password-form";
 import { kurusToLiraInput } from "@/lib/money";
 import { formatGroupName } from "@/modules/groups/format";
 import { listGroups } from "@/modules/groups/service";
 import {
   approveStudentAction,
   changeStudentStatusAction,
+  setStudentPasswordAction,
   updateStudentAction,
 } from "@/modules/students/actions";
-import { getStudent } from "@/modules/students/service";
+import { getStudent, getStudentLogin } from "@/modules/students/service";
 import { allowedStatusTransitions } from "@/modules/students/status";
 import { StudentForm } from "../../../student-form";
 import { StatusActions } from "./status-actions";
@@ -33,7 +35,7 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
     notFound();
   }
 
-  const activeGroups = await listGroups({ activeOnly: true });
+  const [activeGroups, login] = await Promise.all([listGroups({ activeOnly: true }), getStudentLogin(student.id)]);
   const groupOptions = activeGroups.map((group) => ({ value: group.id, label: formatGroupName(group) }));
   // Öğrencinin grubu sonradan pasife alındıysa seçenek olarak kalmalı,
   // yoksa form kaydedilince grup sessizce silinir.
@@ -70,6 +72,28 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
             customPrice: student.customPrice === null ? "" : kurusToLiraInput(student.customPrice),
           }}
         />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-display text-xl">Giriş hesabı</h2>
+        {login?.email ? (
+          <>
+            <p className="max-w-md text-sm text-muted">
+              {login.hasPassword
+                ? `Öğrenci ${login.email} ile panele girebiliyor. Şifresini unuttuysa buradan yenisini verebilirsin.`
+                : `Öğrencinin şifresi yok, panele giremiyor. Şifre verirsen ${login.email} ile giriş yapabilir.`}
+            </p>
+            <PasswordForm
+              action={setStudentPasswordAction.bind(null, student.id)}
+              label={login.hasPassword ? "Yeni şifre" : "Şifre"}
+              submitLabel={login.hasPassword ? "Şifreyi değiştir" : "Şifre ver"}
+            />
+          </>
+        ) : (
+          <p className="max-w-md text-sm text-muted">
+            Öğrencinin panele girebilmesi için önce yukarıdan bir e-posta ekleyip kaydet; sonra burada şifre verebilirsin.
+          </p>
+        )}
       </section>
     </>
   );
