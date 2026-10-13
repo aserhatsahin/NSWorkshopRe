@@ -206,7 +206,71 @@ mantığı saf fonksiyonlarda, yetki ve kimlik kuralları mock'lu testlerde.
 9. Ödemeler  10. Malzeme    11-13. Paneller    14. Audit    15. Deploy
 ```
 
-1–15 tamamlandı. Sırada: eski programdan veri aktarımı, öğrenci fotoğrafı.
+1–15 tamamlandı ve uygulama canlıda. Güncel durum ve bekleyen işler için
+aşağıdaki "Güncel durum" bölümüne bak.
 
 3. adım (permissions) atlanmaz — sonraki her şey onun üstüne kurulur.
 Audit log 6-10 arası adımlarla paralel yazılır, sona bırakılmaz.
+
+## Güncel durum
+
+Son güncelleme: 2026-10-13. Bu bölüm yeni bir oturumun kaldığı yerden devam
+edebilmesi içindir; iş bittikçe güncellenir.
+
+### Canlı ortam
+
+- Uygulama Vercel'de, veritabanı Neon'da (Frankfurt). Depo:
+  `aserhatsahin/NSWorkshopRe`. `main`'e birleşen her PR kendiliğinden yayına
+  çıkar ve migration'ları uygular (`npm run vercel-build`).
+- Ortam değişkenleri yalnızca Vercel'in Production ortamında tanımlı;
+  Preview yayınları veritabanına bağlanmaz.
+- İlk kurulum `/setup` ile yapıldı; atölye sahibi, bir personel ve deneme
+  amaçlı öğrenci hesapları var. Canlıda henüz gerçek öğrenci verisi yok.
+- Alan adı `nsatolye.com` satın alınıyor; Vercel'e bağlanması bekliyor
+  (`docs/yayin-rehberi.md` 5. bölüm).
+
+### Çalışma düzeni
+
+- Her iş kendi branch'inde yapılır; Claude push eder ve PR açar, birleştirmeyi
+  kullanıcı yapar (Claude `gh pr merge` ve `main`'e push yapmaz).
+- Kullanıcı teknik değildir: açıklamalar sade Türkçe, kararlar seçenekli sorulur.
+- Yeni bir servis yazıldığında yalnızca mock'lu testle yetinilmez; yerel
+  veritabanına karşı da çalıştırılır. (`/setup` canlıda tam bu yüzden kırıldı:
+  `$queryRaw` ile `void` dönen sorgu mock'ta fark edilmedi.)
+- `prisma migrate dev` etkileşimsiz ortamda çalışmıyor. Migration şöyle üretilir:
+  `prisma migrate diff --from-migrations prisma/migrations --to-schema
+  prisma/schema.prisma --script` çıktısı yeni bir migration klasörüne yazılır,
+  sonra `prisma migrate deploy`.
+
+### 15. adımdan sonra eklenenler
+
+- Kullanıcı adıyla kayıt ve giriş (`User.username`; e-postasız öğrenciler için).
+- Öğrenci profil fotoğrafı: veritabanında (`StudentPhoto`), tarayıcıda 320 px
+  JPEG'e küçültülür, `/api/students/[id]/photo` üzerinden yetkiyle sunulur.
+- Kullanılmamış grup, ürün, öğrenci ve personel kaydı silinebilir; kullanılmış
+  olan pasife alınır ya da arşivlenir. Aynı gün ve saatte ikinci aktif grup açılamaz.
+- Varsayılan öğrenci şifresi (`Settings.defaultStudentPassword`) ve
+  `User.mustChangePassword` hatırlatması.
+- Giriş ve kayıt için veritabanı tabanlı deneme sınırı (`AuthAttempt`).
+
+### Kullanıcının kararını bekleyenler
+
+- **Canlıdaki deneme verileri:** gerçek veri girilmeden veritabanını sıfırlamak
+  mı, yoksa dönemi/ödemesi olan kayıtlar için atölye sahibine özel "tamamen
+  sil" eklemek mi. İkincisi "finans kaydı silinmez" kuralının istisnası olur.
+- **Arşivlenen öğrencinin girişi:** şu an arşivlenen öğrenci panele girebiliyor.
+- **Kişisel bilgileri silme (KVKK):** borcu sıfır öğrencinin adını, iletişim
+  bilgilerini ve fotoğrafını silip finans kayıtlarını isimsiz bırakan seçenek.
+- **İlk girişte şifre değiştirmeyi zorunlu yapmak** (şu an yalnızca hatırlatma).
+- Daha önce sorulup yanıtlanmamış varsayımlar: durum geçiş kuralları, tek aktif
+  dönem, peşin ödeme alınamaması, indirim ve iptallerin yalnızca atölye
+  sahibinde olması. PR açıklamalarında "benim kararım" diye işaretli.
+
+### Sıradaki işler
+
+- Eski programdaki veriler: yerel bir PostgreSQL'de duruyor, kullanıcının o
+  bilgisayara erişimi yok. Erişim olunca şeması incelenip aktarım betiği yazılacak.
+- Fotoğrafın pano, borçlular listesi ve yoklama ekranına bağlanması.
+- Telefonda atölye sahibinin alt menüsü 9 öğe; az kullanılanlar tek başlıkta toplanabilir.
+- "Şifremi unuttum" akışı yok; sistem e-posta göndermiyor.
+
