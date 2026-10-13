@@ -1,13 +1,9 @@
 "use client";
 
+import { Check, X } from "lucide-react";
 import { useActionState } from "react";
 import type { FormState } from "@/lib/action-state";
 import type { AttendanceStatus } from "@/lib/generated/prisma/client";
-
-const OPTIONS: { status: AttendanceStatus; label: string; activeClass: string }[] = [
-  { status: "PRESENT", label: "Geldi", activeClass: "border-green-600 bg-green-600 text-white" },
-  { status: "ABSENT", label: "Gelmedi", activeClass: "border-red-600 bg-red-600 text-white" },
-];
 
 type AttendanceButtonsProps = {
   status: AttendanceStatus;
@@ -15,41 +11,46 @@ type AttendanceButtonsProps = {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
 };
 
+const choice = "edge rounded-full px-3 py-1.5 text-sm font-medium disabled:opacity-50";
+
+// İşaretlenmiş ders boya lekesi olarak görünür; lekeye basmak işareti kaldırır.
 export function AttendanceButtons({ status, disabled = false, action }: AttendanceButtonsProps) {
   const [state, formAction, isPending] = useActionState(action, {});
+  const isBusy = disabled || isPending;
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <form action={formAction} className="flex flex-wrap justify-end gap-2">
-        {OPTIONS.map((option) => (
-          <button
-            key={option.status}
-            type="submit"
-            name="status"
-            value={option.status}
-            disabled={disabled || isPending}
-            aria-pressed={status === option.status}
-            className={`rounded-md border px-3 py-1.5 text-sm font-medium disabled:opacity-50 ${
-              status === option.status ? option.activeClass : "border-zinc-300 dark:border-zinc-700"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-        {status !== "UNMARKED" ? (
-          <button
-            type="submit"
-            name="status"
-            value="UNMARKED"
-            disabled={disabled || isPending}
-            className="px-1 text-sm text-zinc-500 underline disabled:opacity-50"
-          >
-            Temizle
-          </button>
-        ) : null}
+      <form action={formAction} className="flex items-center justify-end gap-2">
+        {status === "UNMARKED" ? (
+          <>
+            <button type="submit" name="status" value="PRESENT" disabled={isBusy} className={choice}>
+              Geldi
+            </button>
+            <button type="submit" name="status" value="ABSENT" disabled={isBusy} className={choice}>
+              Gelmedi
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="text-sm text-muted">{status === "PRESENT" ? "Geldi" : "Gelmedi"}</span>
+            <button
+              type="submit"
+              name="status"
+              value="UNMARKED"
+              disabled={isBusy}
+              aria-label={`${status === "PRESENT" ? "Geldi" : "Gelmedi"} işaretini kaldır`}
+              title="İşareti kaldır"
+              className={`flex size-9 items-center justify-center disabled:opacity-50 ${
+                status === "PRESENT" ? "blob bg-p-green text-[#f6f1e7]" : "blob-alt bg-p-red text-[#231f1c]"
+              }`}
+            >
+              {status === "PRESENT" ? <Check size={18} aria-hidden /> : <X size={18} aria-hidden />}
+            </button>
+          </>
+        )}
       </form>
       {state.error ? (
-        <p role="alert" className="max-w-xs text-right text-sm text-red-600">
+        <p role="alert" className="max-w-xs text-right text-sm text-danger">
           {state.error}
         </p>
       ) : null}
