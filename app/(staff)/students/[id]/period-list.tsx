@@ -6,7 +6,6 @@ import { addDays, formatDate, workshopToday } from "@/lib/dates";
 import { formatKurus, kurusToLiraInput } from "@/lib/money";
 import { hasPermission } from "@/lib/permissions/definitions";
 import { markAttendanceAction } from "@/modules/attendance/actions";
-import { getStudentDebt } from "@/modules/finance/service";
 import { formatGroupName } from "@/modules/groups/format";
 import { cancelPeriodAction, correctPeriodPriceAction } from "@/modules/periods/actions";
 import { calculateCancellationRefund } from "@/modules/periods/cancellation";
@@ -32,11 +31,7 @@ function describeCancellation(period: PeriodSummary): string {
 }
 
 export async function PeriodList({ studentId, canOpenPeriod }: PeriodListProps) {
-  const [periods, debt, user] = await Promise.all([
-    listStudentPeriods(studentId),
-    getStudentDebt(studentId),
-    getCurrentUser(),
-  ]);
+  const [periods, user] = await Promise.all([listStudentPeriods(studentId), getCurrentUser()]);
   // Sadece arayüzü sadeleştirir; asıl kontrol service içindeki requirePermission'dır.
   const canAdjust = user !== null && hasPermission(user.role, "finance.adjust");
   const canCancel = user !== null && hasPermission(user.role, "period.cancel");
@@ -46,7 +41,7 @@ export async function PeriodList({ studentId, canOpenPeriod }: PeriodListProps) 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-lg font-medium">Dönemler</h2>
+        <h2 className="font-display text-xl">Dönemler</h2>
         {canOpenPeriod && !hasActivePeriod ? (
           <Link href={`/students/${studentId}/periods/new`} className={secondaryButton}>
             Yeni dönem aç
@@ -54,52 +49,25 @@ export async function PeriodList({ studentId, canOpenPeriod }: PeriodListProps) 
         ) : null}
       </div>
 
-      <p className="text-sm">
-        Toplam borç: <strong>{formatKurus(debt.total)}</strong>
-        {debt.total !== 0 ? (
-          <span className="text-zinc-500">
-            {" "}
-            (kurs {formatKurus(debt.course)}, malzeme {formatKurus(debt.material)}
-            {debt.other !== 0 ? `, diğer ${formatKurus(debt.other)}` : ""})
-          </span>
-        ) : null}{" "}
-        <Link href={`/students/${studentId}/finance`} className="underline">
-          Finans geçmişi
-        </Link>
-        {debt.total > 0 ? (
-          <>
-            {" · "}
-            <Link href={`/students/${studentId}/payments/new`} className="underline">
-              Ödeme al
-            </Link>
-          </>
-        ) : null}
-        {canOpenPeriod ? (
-          <>
-            {" · "}
-            <Link href={`/students/${studentId}/sales/new`} className="underline">
-              Malzeme sat
-            </Link>
-          </>
-        ) : null}
-      </p>
-
       {periods.length === 0 ? (
-        <p className="text-zinc-500">Henüz dönem açılmamış.</p>
+        <p className="text-muted">Henüz dönem açılmamış.</p>
       ) : (
-        <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+        <ul className="flex flex-col gap-3">
           {periods.map((period) => (
-            <li key={period.id} className="flex flex-col gap-3 px-4 py-3">
+            <li
+              key={period.id}
+              className={`edge flex flex-col gap-3 rounded-xl bg-surface px-4 py-3 ${period.status === "CANCELLED" ? "opacity-60" : ""}`}
+            >
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                 <span className="flex flex-col">
-                  <span className="font-medium">
+                  <span className="font-display text-xl">
                     {formatDate(period.startDate)} – {formatDate(addDays(period.startDate, (LESSONS_PER_PERIOD - 1) * 7))}
                   </span>
-                  <span className="text-sm text-zinc-500">
+                  <span className="text-sm text-muted">
                     {formatGroupName(period.group)} · {formatKurus(period.price)}
                   </span>
                 </span>
-                <span className="text-sm text-zinc-500">
+                <span className="text-sm text-muted">
                   {PERIOD_STATUS_LABELS[period.status]} · {countMarkedLessons(period.lessons)}/{LESSONS_PER_PERIOD} ders
                 </span>
               </div>

@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { secondaryButton } from "@/components/button-styles";
 import { getCurrentUser } from "@/lib/auth/session";
 import { formatKurus } from "@/lib/money";
 import { hasPermission } from "@/lib/permissions/definitions";
 import { addManualEntryAction, reverseTransactionAction } from "@/modules/finance/actions";
 import { DEBT_CATEGORY_LABELS, TRANSACTION_TYPE_LABELS } from "@/modules/finance/ledger";
-import { getStudentDebt, listStudentTransactions } from "@/modules/finance/service";
+import { listStudentTransactions } from "@/modules/finance/service";
 import { returnMaterialSaleAction } from "@/modules/materials/actions";
 import { listStudentSales } from "@/modules/materials/service";
 import { reversePaymentAction } from "@/modules/payments/actions";
@@ -34,11 +32,9 @@ function formatSigned(kurus: number): string {
 
 export default function FinancePage({ params }: FinancePageProps) {
   return (
-    <div className="flex flex-col gap-6">
-      <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
-        <StudentFinance params={params} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<p className="text-muted">Yükleniyor…</p>}>
+      <StudentFinance params={params} />
+    </Suspense>
   );
 }
 
@@ -49,8 +45,7 @@ async function StudentFinance({ params }: FinancePageProps) {
     notFound();
   }
 
-  const [debt, transactions, payments, sales, user] = await Promise.all([
-    getStudentDebt(student.id),
+  const [transactions, payments, sales, user] = await Promise.all([
     listStudentTransactions(student.id),
     listStudentPayments(student.id),
     listStudentSales(student.id),
@@ -63,55 +58,29 @@ async function StudentFinance({ params }: FinancePageProps) {
 
   return (
     <>
-      <div>
-        <Link href={`/students/${student.id}`} className="text-sm text-zinc-500 hover:underline">
-          ← {student.fullName}
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Finans geçmişi</h1>
-      </div>
-
-      <dl className="grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Toplam borç", value: debt.total },
-          { label: "Kurs", value: debt.course },
-          { label: "Malzeme", value: debt.material },
-          { label: "Diğer", value: debt.other },
-        ].map((item) => (
-          <div key={item.label} className="rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800">
-            <dt className="text-sm text-zinc-500">{item.label}</dt>
-            <dd className="font-medium">{formatKurus(item.value)}</dd>
-          </div>
-        ))}
-      </dl>
-
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-lg font-medium">Ödemeler</h2>
-          {debt.total > 0 ? (
-            <Link href={`/students/${student.id}/payments/new`} className={secondaryButton}>
-              Ödeme al
-            </Link>
-          ) : null}
+          <h2 className="font-display text-xl">Ödemeler</h2>
         </div>
         {payments.length === 0 ? (
-          <p className="text-zinc-500">Henüz ödeme alınmamış.</p>
+          <p className="text-muted">Henüz ödeme alınmamış.</p>
         ) : (
-          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+          <ul className="list">
             {payments.map((payment) => (
               <li key={payment.id} className="flex flex-col gap-2 px-4 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
                   <span className="flex flex-col">
                     <span className="font-medium">
                       {PAYMENT_METHOD_LABELS[payment.method]}
-                      {payment.isReversed ? <span className="font-normal text-red-600"> · iptal edildi</span> : null}
+                      {payment.isReversed ? <span className="font-normal text-danger"> · iptal edildi</span> : null}
                     </span>
-                    <span className="text-sm text-zinc-500">
+                    <span className="text-sm text-muted">
                       {payment.allocations
                         .map((allocation) => `${DEBT_CATEGORY_LABELS[allocation.category]} ${formatKurus(allocation.amount)}`)
                         .join(" · ")}
                     </span>
                     {payment.note ? <span className="text-sm">{payment.note}</span> : null}
-                    <span className="text-sm text-zinc-500">{dateTimeFormatter.format(payment.receivedAt)}</span>
+                    <span className="text-sm text-muted">{dateTimeFormatter.format(payment.receivedAt)}</span>
                   </span>
                   <span className={`font-medium tabular-nums ${payment.isReversed ? "line-through" : ""}`}>
                     {formatKurus(payment.amount)}
@@ -120,6 +89,8 @@ async function StudentFinance({ params }: FinancePageProps) {
                 {canReversePayment && !payment.isReversed ? (
                   <ReverseForm
                     label="Ödemeyi iptal et"
+                    title="Ödemeyi iptal et"
+                    description="Ödeme silinmez; tutarı öğrencinin borcuna geri yazılır. Geri alınamaz."
                     submitLabel="İptali onayla"
                     action={reversePaymentAction.bind(null, payment.id)}
                   />
@@ -132,29 +103,24 @@ async function StudentFinance({ params }: FinancePageProps) {
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-lg font-medium">Malzeme satışları</h2>
-          {student.status === "ACTIVE" ? (
-            <Link href={`/students/${student.id}/sales/new`} className={secondaryButton}>
-              Malzeme sat
-            </Link>
-          ) : null}
+          <h2 className="font-display text-xl">Malzeme satışları</h2>
         </div>
         {sales.length === 0 ? (
-          <p className="text-zinc-500">Henüz malzeme satışı yok.</p>
+          <p className="text-muted">Henüz malzeme satışı yok.</p>
         ) : (
-          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+          <ul className="list">
             {sales.map((sale) => (
               <li key={sale.id} className="flex flex-col gap-2 px-4 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
                   <span className="flex flex-col">
                     <span className="font-medium">
                       {sale.product.name}
-                      {sale.isReturned ? <span className="font-normal text-red-600"> · iade edildi</span> : null}
+                      {sale.isReturned ? <span className="font-normal text-danger"> · iade edildi</span> : null}
                     </span>
-                    <span className="text-sm text-zinc-500">
+                    <span className="text-sm text-muted">
                       {sale.quantity} adet × {formatKurus(sale.unitPrice)}
                     </span>
-                    <span className="text-sm text-zinc-500">{dateTimeFormatter.format(sale.soldAt)}</span>
+                    <span className="text-sm text-muted">{dateTimeFormatter.format(sale.soldAt)}</span>
                   </span>
                   <span className={`font-medium tabular-nums ${sale.isReturned ? "line-through" : ""}`}>
                     {formatKurus(sale.total)}
@@ -163,6 +129,8 @@ async function StudentFinance({ params }: FinancePageProps) {
                 {canReturnSale && !sale.isReturned ? (
                   <ReverseForm
                     label="İade al"
+                    title="Malzeme iadesi"
+                    description="Satış silinmez; tutarı öğrencinin borcundan düşülür. Geri alınamaz."
                     submitLabel="İadeyi onayla"
                     action={returnMaterialSaleAction.bind(null, sale.id)}
                   />
@@ -174,21 +142,21 @@ async function StudentFinance({ params }: FinancePageProps) {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Kayıtlar</h2>
+        <h2 className="font-display text-xl">Kayıtlar</h2>
         {transactions.length === 0 ? (
-          <p className="text-zinc-500">Henüz finans kaydı yok.</p>
+          <p className="text-muted">Henüz finans kaydı yok.</p>
         ) : (
-          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+          <ul className="list">
             {transactions.map((transaction) => (
               <li key={transaction.id} className="flex flex-col gap-2 px-4 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
                   <span className="flex flex-col">
                     <span className="font-medium">
                       {TRANSACTION_TYPE_LABELS[transaction.type]}
-                      <span className="font-normal text-zinc-500"> · {DEBT_CATEGORY_LABELS[transaction.category]}</span>
+                      <span className="font-normal text-muted"> · {DEBT_CATEGORY_LABELS[transaction.category]}</span>
                     </span>
                     {transaction.description ? <span className="text-sm">{transaction.description}</span> : null}
-                    <span className="text-sm text-zinc-500">
+                    <span className="text-sm text-muted">
                       {dateTimeFormatter.format(transaction.createdAt)}
                       {transaction.reversalTransaction ? " · ters çevrildi" : ""}
                       {transaction.reversedTransactionId ? " · ters kayıt" : ""}
@@ -196,7 +164,7 @@ async function StudentFinance({ params }: FinancePageProps) {
                   </span>
                   <span className="flex flex-col items-end">
                     <span className="font-medium tabular-nums">{formatSigned(transaction.amount)}</span>
-                    <span className="text-sm text-zinc-500 tabular-nums">Bakiye {formatKurus(transaction.balance)}</span>
+                    <span className="text-sm text-muted tabular-nums">Bakiye {formatKurus(transaction.balance)}</span>
                   </span>
                 </div>
                 {canAdjust && transaction.canReverse ? (
@@ -210,8 +178,8 @@ async function StudentFinance({ params }: FinancePageProps) {
 
       {canAdjust ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium">Elle kayıt ekle</h2>
-          <p className="max-w-md text-sm text-zinc-500">
+          <h2 className="font-display text-xl">Elle kayıt ekle</h2>
+          <p className="max-w-md text-sm text-muted">
             Kayıtlar silinmez ve düzenlenmez. Hatalı bir kaydı düzeltmek için ters kayıt yazılır.
           </p>
           <ManualEntryForm action={addManualEntryAction.bind(null, student.id)} />

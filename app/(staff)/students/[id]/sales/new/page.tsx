@@ -15,7 +15,7 @@ type NewSalePageProps = { params: Promise<{ id: string }> };
 export default function NewSalePage({ params }: NewSalePageProps) {
   return (
     <div className="flex flex-col gap-6">
-      <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
+      <Suspense fallback={<p className="text-muted">Yükleniyor…</p>}>
         <NewSale params={params} />
       </Suspense>
     </div>
@@ -34,16 +34,16 @@ async function NewSale({ params }: NewSalePageProps) {
   return (
     <>
       <div>
-        <Link href={`/students/${student.id}`} className="text-sm text-zinc-500 hover:underline">
+        <Link href={`/students/${student.id}`} className="text-sm text-muted hover:underline">
           ← {student.fullName}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Malzeme sat</h1>
+        <h1 className="mt-2 font-display text-3xl">Malzeme sat</h1>
       </div>
 
       {student.status !== "ACTIVE" ? (
-        <p className="max-w-md text-sm text-red-600">Yalnızca aktif öğrenciye malzeme satılabilir.</p>
+        <p className="max-w-md text-sm text-danger">Yalnızca aktif öğrenciye malzeme satılabilir.</p>
       ) : products.length === 0 ? (
-        <p className="max-w-md text-sm text-red-600">
+        <p className="max-w-md text-sm text-danger">
           Satış yapmak için önce{" "}
           <Link href="/products/new" className="underline">
             bir ürün ekle

@@ -11,12 +11,12 @@ export default function ProductsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Ürünler</h1>
+        <h1 className="font-display text-3xl">Ürünler</h1>
         <Link href="/products/new" className={primaryButton}>
           Yeni ürün
         </Link>
       </div>
-      <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
+      <Suspense fallback={<p className="text-muted">Yükleniyor…</p>}>
         <ProductList />
       </Suspense>
     </div>
@@ -27,19 +27,19 @@ async function ProductList() {
   const products = await listProducts();
 
   if (products.length === 0) {
-    return <p className="text-zinc-500">Henüz ürün yok.</p>;
+    return <p className="text-muted">Henüz ürün yok.</p>;
   }
 
   return (
-    <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+    <ul className="list">
       {products.map((product) => (
         <li key={product.id}>
           <Link
             href={`/products/${product.id}`}
-            className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+            className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-paper"
           >
             <span className="font-medium">{product.name}</span>
-            <span className="shrink-0 text-sm text-zinc-500">
+            <span className="shrink-0 text-sm text-muted">
               {formatKurus(product.defaultPrice)}
               {product.isActive ? "" : " · Pasif"}
             </span>

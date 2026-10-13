@@ -19,7 +19,7 @@ export function SelectField({ label, name, options, placeholder, errors, hint, .
         name={name}
         aria-invalid={errors?.length ? true : undefined}
         aria-describedby={describedBy}
-        className="rounded-md border border-zinc-300 px-3 py-2 text-base font-normal aria-invalid:border-red-500 dark:border-zinc-700 dark:bg-zinc-900"
+        className="field"
         {...selectProps}
       >
         {placeholder !== undefined ? <option value="">{placeholder}</option> : null}
@@ -30,11 +30,11 @@ export function SelectField({ label, name, options, placeholder, errors, hint, .
         ))}
       </select>
       {errors?.length ? (
-        <span id={`${name}-error`} className="font-normal text-red-600">
+        <span id={`${name}-error`} className="font-normal text-danger">
           {errors.join(" ")}
         </span>
       ) : hint ? (
-        <span id={`${name}-hint`} className="font-normal text-zinc-500">
+        <span id={`${name}-hint`} className="font-normal text-muted">
           {hint}
         </span>
       ) : null}

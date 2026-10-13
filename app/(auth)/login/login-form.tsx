@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { primaryButton } from "@/components/button-styles";
 import { loginAction, type LoginState } from "@/modules/auth/actions";
 
 const INITIAL_STATE: LoginState = {};
@@ -18,7 +19,7 @@ export function LoginForm() {
           autoComplete="email"
           defaultValue={state.email}
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-base font-normal dark:border-zinc-700 dark:bg-zinc-900"
+          className="field"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm font-medium">
@@ -28,18 +29,18 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-base font-normal dark:border-zinc-700 dark:bg-zinc-900"
+          className="field"
         />
       </label>
       {state.error ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger">
           {state.error}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-foreground px-4 py-2 font-medium text-background disabled:opacity-60"
+        className={primaryButton}
       >
         {isPending ? "Giriş yapılıyor…" : "Giriş yap"}
       </button>

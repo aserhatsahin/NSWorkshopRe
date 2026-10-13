@@ -60,9 +60,9 @@ export function PaymentForm({ action, methodOptions }: PaymentFormProps) {
         errors={state.fieldErrors?.mode}
       />
       {mode === "MANUAL" ? (
-        <fieldset className="flex flex-col gap-3 rounded-md border border-zinc-200 p-3 dark:border-zinc-800">
+        <fieldset className="flex flex-col gap-3 rounded-md border border-line p-3">
           <legend className="px-1 text-sm font-medium">Elle dağılım (TL)</legend>
-          <p className="text-sm text-zinc-500">Toplamı ödeme tutarına eşit olmalı. Boş bırakılan 0 sayılır.</p>
+          <p className="text-sm text-muted">Toplamı ödeme tutarına eşit olmalı. Boş bırakılan 0 sayılır.</p>
           <div className="grid grid-cols-3 gap-3">
             <FormField label="Kurs" name="manualCourse" inputMode="decimal" errors={state.fieldErrors?.manualCourse} />
             <FormField
