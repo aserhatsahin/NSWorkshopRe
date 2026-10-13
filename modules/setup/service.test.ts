@@ -15,7 +15,7 @@ vi.mock("@/modules/auth/password", async (importOriginal) => ({
 }));
 vi.mock("@/lib/db/prisma", () => {
   const client = {
-    $queryRaw: async () => [],
+    $executeRaw: async () => 1,
     user: { count: mocks.ownerCount, create: mocks.userCreate },
     settings: { count: mocks.settingsCount, create: mocks.settingsCreate },
     auditLog: { create: mocks.auditCreate },
