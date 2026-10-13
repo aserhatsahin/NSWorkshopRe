@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { AvatarBlob } from "@/components/avatar-blob";
@@ -129,6 +130,16 @@ async function OwnPanel() {
           />
         </div>
       </div>
+
+      {panel.mustChangePassword ? (
+        <p className="edge rounded-xl bg-p-ochre p-4 text-sm text-[#231f1c]">
+          Şifreni atölye belirledi ve başkaları da biliyor olabilir. Yalnızca senin bildiğin bir şifre koymak için{" "}
+          <Link href="/account" className="font-medium underline">
+            şifreni değiştir
+          </Link>
+          .
+        </p>
+      ) : null}
 
       <DebtCards debt={panel.debt} />
 

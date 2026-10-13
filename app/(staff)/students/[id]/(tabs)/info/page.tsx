@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { DefaultPasswordButton } from "@/components/default-password-button";
 import { DeleteButton } from "@/components/delete-button";
 import { PasswordForm } from "@/components/password-form";
 import { PhotoUploader } from "@/components/photo-uploader";
@@ -8,10 +9,12 @@ import { kurusToLiraInput } from "@/lib/money";
 import { formatGroupName } from "@/modules/groups/format";
 import { listGroups } from "@/modules/groups/service";
 import { removeStudentPhotoAction, setStudentPhotoAction } from "@/modules/photos/actions";
+import { getDefaultStudentPassword } from "@/modules/settings/service";
 import {
   approveStudentAction,
   changeStudentStatusAction,
   deleteStudentAction,
+  resetStudentPasswordToDefaultAction,
   setStudentPasswordAction,
   updateStudentAction,
 } from "@/modules/students/actions";
@@ -39,10 +42,11 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
     notFound();
   }
 
-  const [activeGroups, login, deletable] = await Promise.all([
+  const [activeGroups, login, deletable, defaultPassword] = await Promise.all([
     listGroups({ activeOnly: true }),
     getStudentLogin(student.id),
     isStudentDeletable(student.id),
+    getDefaultStudentPassword(),
   ]);
   const groupOptions = activeGroups.map((group) => ({ value: group.id, label: formatGroupName(group) }));
   // Öğrencinin grubu sonradan pasife alındıysa seçenek olarak kalmalı,
@@ -114,6 +118,12 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
               label={login?.hasPassword ? "Yeni şifre" : "Şifre"}
               submitLabel={login?.hasPassword ? "Şifreyi değiştir" : "Şifre ver"}
             />
+            {defaultPassword ? (
+              <DefaultPasswordButton
+                defaultPassword={defaultPassword}
+                action={resetStudentPasswordToDefaultAction.bind(null, student.id)}
+              />
+            ) : null}
           </>
         ) : (
           <p className="max-w-md text-sm text-muted">
