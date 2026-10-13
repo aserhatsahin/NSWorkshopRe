@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Palette,
   Settings,
+  UserCog,
   Users,
   Wallet,
   type LucideIcon,
@@ -23,6 +24,7 @@ const ICONS = {
   home: Home,
   finance: Wallet,
   settings: Settings,
+  staff: UserCog,
 } satisfies Record<string, LucideIcon>;
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
