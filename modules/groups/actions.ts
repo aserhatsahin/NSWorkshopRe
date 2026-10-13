@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { formValues, toErrorMessage, type FormState } from "@/lib/action-state";
 import { groupFormSchema } from "./schema";
-import { createGroup, setGroupActive, updateGroup } from "./service";
+import { createGroup, deleteGroup, setGroupActive, updateGroup } from "./service";
 
 function readGroupForm(formData: FormData) {
   return groupFormSchema.safeParse({
@@ -62,4 +62,14 @@ export async function setGroupActiveAction(groupId: string, isActive: boolean): 
 
   refresh();
   return {};
+}
+
+export async function deleteGroupAction(groupId: string): Promise<FormState> {
+  try {
+    await deleteGroup(groupId);
+  } catch (error) {
+    return { error: toErrorMessage(error) };
+  }
+
+  redirect("/groups");
 }

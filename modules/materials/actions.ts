@@ -6,7 +6,14 @@ import { z } from "zod";
 import { formValues, toErrorMessage, type FormState } from "@/lib/action-state";
 import { reversalSchema } from "@/modules/finance/schema";
 import { productFormSchema, saleFormSchema } from "./schema";
-import { createProduct, returnMaterialSale, sellMaterial, setProductActive, updateProduct } from "./service";
+import {
+  createProduct,
+  deleteProduct,
+  returnMaterialSale,
+  sellMaterial,
+  setProductActive,
+  updateProduct,
+} from "./service";
 
 function readProductForm(formData: FormData) {
   return productFormSchema.safeParse({
@@ -105,4 +112,14 @@ export async function returnMaterialSaleAction(
 
   refresh();
   return {};
+}
+
+export async function deleteProductAction(productId: string): Promise<FormState> {
+  try {
+    await deleteProduct(productId);
+  } catch (error) {
+    return { error: toErrorMessage(error) };
+  }
+
+  redirect("/products");
 }

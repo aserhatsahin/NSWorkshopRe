@@ -30,6 +30,7 @@ async function NewStudentForm() {
   return (
     <StudentForm
       action={createStudentAction}
+      withPassword
       submitLabel="Öğrenciyi ekle"
       groupOptions={groups.map((group) => ({ value: group.id, label: formatGroupName(group) }))}
     />

@@ -10,6 +10,10 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   STUDENT_PASSWORD_SET: "Öğrenciye giriş şifresi verildi",
   STUDENT_PHOTO_UPDATED: "Öğrenci fotoğrafı yüklendi",
   STUDENT_PHOTO_REMOVED: "Öğrenci fotoğrafı kaldırıldı",
+  STUDENT_DELETED: "Kullanılmamış öğrenci kaydı silindi",
+  GROUP_DELETED: "Kullanılmamış grup silindi",
+  PRODUCT_DELETED: "Kullanılmamış ürün silindi",
+  STAFF_DELETED: "Kullanılmamış personel hesabı silindi",
   GROUP_CREATED: "Grup eklendi",
   GROUP_UPDATED: "Grup güncellendi",
   PERIOD_CREATED: "Dönem açıldı",
@@ -35,7 +39,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
 export const AUDIT_CATEGORIES = {
   students: {
     label: "Öğrenci",
-    actions: ["STUDENT_REGISTERED", "STUDENT_CREATED", "STUDENT_UPDATED", "STUDENT_APPROVED", "STUDENT_STATUS_CHANGED", "STUDENT_PASSWORD_SET", "STUDENT_PHOTO_UPDATED", "STUDENT_PHOTO_REMOVED"],
+    actions: ["STUDENT_REGISTERED", "STUDENT_CREATED", "STUDENT_UPDATED", "STUDENT_APPROVED", "STUDENT_STATUS_CHANGED", "STUDENT_PASSWORD_SET", "STUDENT_PHOTO_UPDATED", "STUDENT_PHOTO_REMOVED", "STUDENT_DELETED"],
   },
   lessons: {
     label: "Dönem ve yoklama",
@@ -47,11 +51,11 @@ export const AUDIT_CATEGORIES = {
   },
   materials: {
     label: "Malzeme",
-    actions: ["MATERIAL_SOLD", "MATERIAL_RETURNED", "PRODUCT_CREATED", "PRODUCT_UPDATED"],
+    actions: ["MATERIAL_SOLD", "MATERIAL_RETURNED", "PRODUCT_CREATED", "PRODUCT_UPDATED", "PRODUCT_DELETED"],
   },
   admin: {
     label: "Yönetim",
-    actions: ["GROUP_CREATED", "GROUP_UPDATED", "SETTINGS_UPDATED", "STAFF_CREATED", "STAFF_UPDATED", "STAFF_PASSWORD_RESET", "PASSWORD_CHANGED", "WORKSHOP_SETUP"],
+    actions: ["GROUP_CREATED", "GROUP_UPDATED", "GROUP_DELETED", "STAFF_DELETED", "SETTINGS_UPDATED", "STAFF_CREATED", "STAFF_UPDATED", "STAFF_PASSWORD_RESET", "PASSWORD_CHANGED", "WORKSHOP_SETUP"],
   },
 } as const satisfies Record<string, { label: string; actions: readonly AuditAction[] }>;
 
@@ -150,7 +154,13 @@ export function describeAudit(action: string, metadata: unknown): string | null 
     case "PRODUCT_CREATED":
       return joinParts([text(meta.name), money(meta.defaultPrice)]);
     case "STAFF_CREATED":
+    case "STAFF_DELETED":
       return joinParts([text(meta.fullName), text(meta.email)]);
+    case "STUDENT_DELETED":
+    case "GROUP_DELETED":
+    case "PRODUCT_DELETED":
+      // Kayıt artık yok; neyin silindiği yalnızca burada yazar.
+      return joinParts([text(meta.name)]);
     case "GROUP_UPDATED":
     case "PRODUCT_UPDATED":
     case "STAFF_UPDATED":

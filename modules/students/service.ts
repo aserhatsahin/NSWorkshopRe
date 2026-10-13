@@ -81,8 +81,17 @@ export async function getStudent(id: string): Promise<StudentSummary | null> {
 }
 
 // Personelin eklediği öğrenci onay beklemez; kaydı açan kişi zaten yetkili.
-export async function createStudent(input: StudentFormInput): Promise<{ id: string }> {
+// initialPassword verilirse öğrenci hemen panele girebilir; verilmezse şifre
+// sonradan Bilgiler sekmesinden verilir.
+export async function createStudent(input: StudentFormInput, initialPassword?: string): Promise<{ id: string }> {
   const actor = await requirePermission("student.create");
+  if (initialPassword !== undefined) {
+    await requirePermission("student.setPassword");
+    if (!input.email && !input.username) {
+      throw new DomainError("Şifre vermek için e-posta ya da kullanıcı adı da yaz.");
+    }
+  }
+  const passwordHash = initialPassword === undefined ? null : await hashPassword(initialPassword);
   if (input.customPrice !== null) {
     await requirePermission("period.setPrice");
   }
@@ -96,6 +105,7 @@ export async function createStudent(input: StudentFormInput): Promise<{ id: stri
           role: "STUDENT",
           email: input.email,
           username: input.username,
+          passwordHash,
           studentProfile: {
             create: {
               fullName: input.fullName,
@@ -322,5 +332,63 @@ export async function setStudentPassword(studentId: string, password: string): P
     await tx.user.update({ where: { id: student.userId }, data: { passwordHash } });
     // Şifre ya da hash'i log'a yazılmaz.
     await logAudit(tx, { actorId: actor.id, action: "STUDENT_PASSWORD_SET", targetStudentId: studentId });
+  });
+}
+
+const usageSelect = {
+  _count: { select: { periods: true, transactions: true, payments: true, materialSales: true } },
+} satisfies Prisma.StudentProfileSelect;
+
+type StudentUsage = Prisma.StudentProfileGetPayload<{ select: typeof usageSelect }>;
+
+function isUnused(student: StudentUsage): boolean {
+  const { periods, transactions, payments, materialSales } = student._count;
+  return periods + transactions + payments + materialSales === 0;
+}
+
+// Öğrencinin dönemi, ödemesi, satışı ya da borç kaydı var mı. Grubunun
+// olup olmaması silmeye engel değildir.
+export async function isStudentDeletable(studentId: string): Promise<boolean> {
+  await requirePermission("student.view");
+  const student = await prisma.studentProfile.findUnique({ where: { id: studentId }, select: usageSelect });
+  return student !== null && isUnused(student);
+}
+
+// Yalnızca hiç kullanılmamış kayıt (yanlış eklenmiş, deneme) silinebilir.
+// Dönemi ya da herhangi bir finans kaydı olan öğrenci silinmez, arşivlenir:
+// ödemeleri atölyenin gelir kaydıdır.
+export async function deleteStudent(studentId: string): Promise<void> {
+  const actor = await requirePermission("student.delete");
+
+  await prisma.$transaction(async (tx) => {
+    const student = await tx.studentProfile.findUnique({
+      where: { id: studentId },
+      select: { userId: true, fullName: true, ...usageSelect },
+    });
+    if (!student) {
+      throw new DomainError(NOT_FOUND);
+    }
+    if (!isUnused(student)) {
+      throw new DomainError("Bu öğrencinin dönemi ya da finans kaydı var; silinemez. Arşivleyebilirsin.");
+    }
+
+    // Fotoğraf profile bağlı olarak kendiliğinden silinir; bu öğrenciyi
+    // hedefleyen audit kayıtlarının hedefi boşalır.
+    await tx.studentProfile.delete({ where: { id: studentId } });
+
+    // Kendi kaydolan öğrenci, kendi audit kayıtlarının "yapan"ıdır ve audit
+    // kaydı silinmez. O durumda kullanıcı satırı kimliksiz ve kapalı olarak
+    // kalır; e-posta ve kullanıcı adı boşaldığı için yeniden kullanılabilir.
+    const authoredLogs = await tx.auditLog.count({ where: { actorId: student.userId } });
+    if (authoredLogs > 0) {
+      await tx.user.update({
+        where: { id: student.userId },
+        data: { email: null, username: null, phone: null, passwordHash: null, isActive: false },
+      });
+    } else {
+      await tx.user.delete({ where: { id: student.userId } });
+    }
+
+    await logAudit(tx, { actorId: actor.id, action: "STUDENT_DELETED", metadata: { name: student.fullName } });
   });
 }

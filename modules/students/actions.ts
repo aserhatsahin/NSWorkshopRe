@@ -14,6 +14,7 @@ import {
   approveStudent,
   changeStudentStatus,
   createStudent,
+  deleteStudent,
   registerStudent,
   setStudentPassword,
   updateStudent,
@@ -32,15 +33,26 @@ function readStudentForm(formData: FormData) {
 }
 
 export async function createStudentAction(_previous: FormState, formData: FormData): Promise<FormState> {
-  const values = formValues(formData);
+  const values = formValues(formData, ["password"]);
   const parsed = readStudentForm(formData);
   if (!parsed.success) {
     return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values };
   }
 
+  // İlk şifre isteğe bağlıdır; boş bırakılırsa öğrenci şifresiz oluşturulur.
+  const rawPassword = formData.get("password");
+  let initialPassword: string | undefined;
+  if (typeof rawPassword === "string" && rawPassword !== "") {
+    const password = passwordSchema.safeParse(rawPassword);
+    if (!password.success) {
+      return { fieldErrors: { password: z.flattenError(password.error).formErrors }, values };
+    }
+    initialPassword = password.data;
+  }
+
   let studentId: string;
   try {
-    ({ id: studentId } = await createStudent(parsed.data));
+    ({ id: studentId } = await createStudent(parsed.data, initialPassword));
   } catch (error) {
     return { error: toErrorMessage(error), values };
   }
@@ -162,4 +174,14 @@ export async function setStudentPasswordAction(
 
   refresh();
   return { success: "Şifre kaydedildi." };
+}
+
+export async function deleteStudentAction(studentId: string): Promise<FormState> {
+  try {
+    await deleteStudent(studentId);
+  } catch (error) {
+    return { error: toErrorMessage(error) };
+  }
+
+  redirect("/students");
 }
