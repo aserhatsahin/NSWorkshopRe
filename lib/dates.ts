@@ -14,6 +14,12 @@ const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
 
 const todayFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: WORKSHOP_TIME_ZONE });
 
+const hourFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: WORKSHOP_TIME_ZONE,
+  hour: "2-digit",
+  hourCycle: "h23",
+});
+
 // "2026-10-08" -> Date. Var olmayan tarihleri (31 Şubat gibi) reddeder.
 export function parseDateInput(input: string): Date | null {
   const match = DATE_INPUT_PATTERN.exec(input.trim());
@@ -42,6 +48,11 @@ export function addDays(date: Date, days: number): Date {
 // Atölyenin bulunduğu saat dilimine göre bugünün tarihi.
 export function workshopToday(now: Date = new Date()): Date {
   return parseDateInput(todayFormatter.format(now))!;
+}
+
+// Atölyenin saat dilimine göre günün saati (0-23).
+export function workshopHour(now: Date = new Date()): number {
+  return Number(hourFormatter.format(now));
 }
 
 // from dahil, haftanın istenen gününe denk gelen ilk tarih.

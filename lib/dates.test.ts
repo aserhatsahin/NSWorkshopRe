@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, formatDate, nextWeekday, parseDateInput, toDateInput, workshopToday } from "./dates";
+import { addDays, formatDate, nextWeekday, parseDateInput, toDateInput, workshopHour, workshopToday } from "./dates";
 
 describe("parseDateInput", () => {
   it("geçerli tarihi UTC gece yarısına çevirir", () => {
@@ -48,5 +48,12 @@ describe("workshopToday", () => {
 describe("formatDate", () => {
   it("Türkçe yazar", () => {
     expect(formatDate(parseDateInput("2026-10-08")!)).toBe("8 Ekim 2026");
+  });
+});
+
+describe("workshopHour", () => {
+  it("saati sunucunun değil atölyenin saat dilimine göre verir", () => {
+    expect(workshopHour(new Date("2026-10-13T06:30:00Z"))).toBe(9);
+    expect(workshopHour(new Date("2026-10-13T21:30:00Z"))).toBe(0);
   });
 });

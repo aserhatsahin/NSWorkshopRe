@@ -31,7 +31,7 @@ npx prisma generate      # client'ı yeniden üret
 app/
   (auth)/      # giriş, kayıt, ilk kurulum — oturumsuz
   (staff)/     # OWNER + STAFF: pano, yoklama, öğrenciler, gruplar, malzeme
-  (owner)/     # yalnızca OWNER: finans, personel, geçmiş, ayarlar
+  (owner)/     # yalnızca OWNER: pano (overview), finans, personel, geçmiş, ayarlar
   (student)/   # öğrenci paneli
   (account)/   # her rol: hesabım
 lib/auth|permissions|db/
@@ -111,6 +111,14 @@ içinde tutulur ve STAFF'ın eriştiği hiçbir sayfadan import edilmez
 kimlik parametreyle alınmaz, oturumdan gelir.
 
 ## Dashboard listeleri
+
+Pano iki sayfadır ama aynı bileşenleri kullanır: personel `/dashboard`
+(`app/(staff)`), atölye sahibi `/overview` (`app/(owner)`). Atölye sahibinin
+panosu genel finans özetini içerdiği için `(staff)` altında duramaz; `/dashboard`
+atölye sahibini `/overview`'a yönlendirir. En üstte karşılama ve bugünün
+dersleri, altında "Yapılacaklar" (`modules/dashboard/tasks.ts`): bugünün
+yoklaması, geçmişte işaretsiz kalmış yoklamalar ve aşağıdaki listelerin özeti.
+Boş liste çizilmez.
 
 OWNER ve STAFF'ta ortak:
 - dönemi yakında bitecekler (aktif dönem, 3+ ders işlenmiş)
@@ -252,6 +260,8 @@ edebilmesi içindir; iş bittikçe güncellenir.
 - Varsayılan öğrenci şifresi (`Settings.defaultStudentPassword`) ve
   `User.mustChangePassword` hatırlatması.
 - Giriş ve kayıt için veritabanı tabanlı deneme sınırı (`AuthAttempt`).
+- Yeni pano: karşılama, bugünün dersleri ve "Yapılacaklar" hatırlatmaları;
+  atölye sahibine ayrıca para özeti ve en borçlu 5 öğrenci (`/overview`).
 
 ### Kullanıcının kararını bekleyenler
 
@@ -270,7 +280,9 @@ edebilmesi içindir; iş bittikçe güncellenir.
 
 - Eski programdaki veriler: yerel bir PostgreSQL'de duruyor, kullanıcının o
   bilgisayara erişimi yok. Erişim olunca şeması incelenip aktarım betiği yazılacak.
-- Fotoğrafın pano, borçlular listesi ve yoklama ekranına bağlanması.
+- Fotoğrafın yoklama ekranına bağlanması (pano ve borçlular listesi bağlandı).
+- Pano hatırlatmalarına eklenebilecekler: grubu olmayan aktif öğrenciler,
+  şifresini hâlâ değiştirmemiş öğrenciler.
 - Telefonda atölye sahibinin alt menüsü 9 öğe; az kullanılanlar tek başlıkta toplanabilir.
 - "Şifremi unuttum" akışı yok; sistem e-posta göndermiyor.
 
