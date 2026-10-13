@@ -1,12 +1,14 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { z } from "zod";
 import { formValues, toErrorMessage, type FormState } from "@/lib/action-state";
 import { signIn } from "@/lib/auth";
 import { passwordSchema } from "@/modules/auth/password";
+import { clientIpFrom, isRateLimited, recordAttempt, REGISTER_LIMIT, registerKey } from "@/modules/auth/rate-limit";
 import { registerSchema, studentFormSchema } from "./schema";
 import {
   approveStudent,
@@ -108,6 +110,13 @@ export async function registerStudentAction(_previous: FormState, formData: Form
   if (!parsed.success) {
     return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values };
   }
+
+  // Kayıt herkese açık olduğu için aynı adresten art arda hesap açılması sınırlanır.
+  const attemptKey = registerKey(clientIpFrom(await headers()));
+  if (await isRateLimited(attemptKey, REGISTER_LIMIT)) {
+    return { error: "Bu bağlantıdan çok fazla kayıt denemesi yapıldı. Bir saat sonra tekrar dene.", values };
+  }
+  await recordAttempt(attemptKey);
 
   try {
     await registerStudent(parsed.data);

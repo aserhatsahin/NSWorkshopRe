@@ -2,11 +2,13 @@
 
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/lib/auth";
+import { isRateLimited, LOGIN_LIMIT, loginKey } from "./rate-limit";
 import { loginSchema } from "./schema";
 
 export type LoginState = { error?: string; email?: string };
 
 const INVALID_CREDENTIALS = "E-posta veya şifre hatalı.";
+const TOO_MANY_ATTEMPTS = "Çok fazla hatalı deneme yapıldı. 15 dakika sonra tekrar dene.";
 
 export async function loginAction(_previous: LoginState, formData: FormData): Promise<LoginState> {
   const rawEmail = formData.get("email");
@@ -17,6 +19,12 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
 
   if (!parsed.success) {
     return { error: INVALID_CREDENTIALS, email };
+  }
+
+  // authenticate() sınırı zaten uygular; buradaki kontrol yalnızca
+  // kullanıcıya neden giremediğini söyleyebilmek için.
+  if (await isRateLimited(loginKey(parsed.data.email), LOGIN_LIMIT)) {
+    return { error: TOO_MANY_ATTEMPTS, email };
   }
 
   try {
