@@ -1,10 +1,11 @@
 "use client";
 
-import { CalendarDays, ClipboardCheck, Home, Palette, Users, type LucideIcon } from "lucide-react";
+import { CalendarDays, ClipboardCheck, Home, LayoutDashboard, Palette, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ICONS = {
+  dashboard: LayoutDashboard,
   attendance: ClipboardCheck,
   students: Users,
   groups: CalendarDays,
