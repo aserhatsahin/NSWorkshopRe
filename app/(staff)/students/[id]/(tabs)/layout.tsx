@@ -8,7 +8,10 @@ import { Badge, StatusBadge } from "@/components/status-badge";
 import { pigmentFor } from "@/lib/pigment";
 import { getStudentDebt } from "@/modules/finance/service";
 import { formatGroupName } from "@/modules/groups/format";
+import { approveStudentAction, changeStudentStatusAction } from "@/modules/students/actions";
 import { getStudent } from "@/modules/students/service";
+import { allowedStatusTransitions } from "@/modules/students/status";
+import { StatusActions } from "./status-actions";
 import { StudentTabs } from "./student-tabs";
 
 type StudentLayoutProps = { params: Promise<{ id: string }>; children: ReactNode };
@@ -64,6 +67,29 @@ async function StudentHeader({ params }: Pick<StudentLayoutProps, "params">) {
           ) : null}
         </div>
       </div>
+
+      {/* Onay, öğrenciye tıklanınca açılan ilk ekranda görünmeli; yalnızca
+          Bilgiler sekmesinde durursa bekleyen kayıt gözden kaçıyor. */}
+      {student.status === "PENDING" ? (
+        <section className="edge flex flex-col gap-3 rounded-xl bg-surface p-4">
+          <div className="flex items-start gap-3">
+            <span aria-hidden className="blob mt-1 size-5 shrink-0 bg-p-ochre" />
+            <div>
+              <h2 className="font-display text-2xl leading-tight">Kayıt onay bekliyor</h2>
+              <p className="mt-1 text-sm text-muted">
+                Öğrenci kaydını kendi oluşturdu. Onaylanana kadar panelinde hiçbir bilgi göremez ve kendisine dönem
+                açılamaz.
+              </p>
+            </div>
+          </div>
+          <StatusActions
+            canApprove
+            transitions={allowedStatusTransitions(student.status)}
+            approveAction={approveStudentAction.bind(null, student.id)}
+            changeStatusAction={changeStudentStatusAction.bind(null, student.id)}
+          />
+        </section>
+      ) : null}
 
       <DebtCards debt={debt} />
 
