@@ -10,6 +10,7 @@ const OWNER_ONLY: Permission[] = [
   "payment.reverse",
   "material.return",
   "settings.manage",
+  "audit.view",
   "reports.view",
   "staff.manage",
 ];

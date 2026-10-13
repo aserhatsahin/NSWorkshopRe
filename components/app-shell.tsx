@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -70,9 +70,12 @@ export function AppShell({ items, ownerItems = [], children }: AppShellProps) {
         </nav>
         <div className="mt-auto flex flex-col gap-3 px-3 pt-6 text-sm text-nav-fg">
           <PigmentDots />
-          <Suspense fallback={null}>
-            <CurrentUserEmail />
-          </Suspense>
+          <Link href="/account" className="inline-flex min-w-0 items-center gap-2 hover:text-nav-title">
+            <UserRound size={16} aria-hidden className="shrink-0" />
+            <Suspense fallback={<span>Hesabım</span>}>
+              <CurrentUserEmail />
+            </Suspense>
+          </Link>
           <ThemeToggle className="hover:text-nav-title" />
           <LogoutButton className="hover:text-nav-title" />
         </div>
@@ -83,6 +86,9 @@ export function AppShell({ items, ownerItems = [], children }: AppShellProps) {
           NS Atölye
         </Link>
         <div className="flex items-center gap-4 text-sm text-nav-fg">
+          <Link href="/account" aria-label="Hesabım" className="inline-flex items-center">
+            <UserRound size={18} aria-hidden />
+          </Link>
           <ThemeToggle />
           <LogoutButton className="" />
         </div>
@@ -119,5 +125,5 @@ async function RoleLinks({
 
 async function CurrentUserEmail() {
   const user = await getCurrentUser();
-  return user?.email ? <span className="truncate text-xs">{user.email}</span> : null;
+  return <span className="truncate text-xs">{user?.email ?? "Hesabım"}</span>;
 }

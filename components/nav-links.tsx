@@ -3,6 +3,7 @@
 import {
   CalendarDays,
   ClipboardCheck,
+  History,
   Home,
   LayoutDashboard,
   Palette,
@@ -25,6 +26,7 @@ const ICONS = {
   finance: Wallet,
   settings: Settings,
   staff: UserCog,
+  audit: History,
 } satisfies Record<string, LucideIcon>;
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
