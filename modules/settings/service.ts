@@ -23,11 +23,17 @@ export async function getSuggestedPeriodPrice(studentId: string): Promise<number
   return settings.defaultPeriodPrice;
 }
 
-export type WorkshopSettings = { defaultPeriodPrice: number; debtAlertThreshold: number };
+export type WorkshopSettings = {
+  defaultPeriodPrice: number;
+  debtAlertThreshold: number;
+  defaultStudentPassword: string | null;
+};
 
 export async function getSettings(): Promise<WorkshopSettings | null> {
   await requirePermission("settings.manage");
-  return prisma.settings.findFirst({ select: { defaultPeriodPrice: true, debtAlertThreshold: true } });
+  return prisma.settings.findFirst({
+    select: { defaultPeriodPrice: true, debtAlertThreshold: true, defaultStudentPassword: true },
+  });
 }
 
 // Varsayılan dönem ücreti yalnızca bundan sonra açılacak dönemlere önerilir;
@@ -37,7 +43,7 @@ export async function updateSettings(input: SettingsFormInput): Promise<void> {
 
   await prisma.$transaction(async (tx) => {
     const current = await tx.settings.findFirst({
-      select: { id: true, defaultPeriodPrice: true, debtAlertThreshold: true },
+      select: { id: true, defaultPeriodPrice: true, debtAlertThreshold: true, defaultStudentPassword: true },
     });
 
     if (current) {
@@ -53,8 +59,18 @@ export async function updateSettings(input: SettingsFormInput): Promise<void> {
         before: current
           ? { defaultPeriodPrice: current.defaultPeriodPrice, debtAlertThreshold: current.debtAlertThreshold }
           : null,
-        after: { ...input },
+        after: { defaultPeriodPrice: input.defaultPeriodPrice, debtAlertThreshold: input.debtAlertThreshold },
+        // Şifrenin kendisi log'a yazılmaz; yalnızca değişip değişmediği.
+        defaultStudentPasswordChanged: (current?.defaultStudentPassword ?? null) !== input.defaultStudentPassword,
       },
     });
   });
+}
+
+// Personel, öğrenciye hangi şifreyi söyleyeceğini bilmek zorundadır; bu
+// yüzden varsayılan şifreyi şifre verme yetkisi olan herkes (OWNER + STAFF) görür.
+export async function getDefaultStudentPassword(): Promise<string | null> {
+  await requirePermission("student.setPassword");
+  const settings = await prisma.settings.findFirst({ select: { defaultStudentPassword: true } });
+  return settings?.defaultStudentPassword || null;
 }

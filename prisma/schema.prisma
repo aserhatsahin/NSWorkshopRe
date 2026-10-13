@@ -42,6 +42,11 @@ model User {
   passwordHash String?
   role         Role
 
+  // Şifreyi kullanıcının kendisi değil personel belirlediyse (ya da
+  // varsayılan şifre atandıysa) true olur; kullanıcı kendi şifresini
+  // koyana kadar panelinde değiştirmesi hatırlatılır.
+  mustChangePassword Boolean @default(false)
+
   // Yetki kontrolü JWT'ye değil, her zaman bu satıra bakar.
   // Pasife alınan personelin elindeki eski token işe yaramaz.
   isActive Boolean @default(true)
@@ -352,6 +357,11 @@ model Settings {
   // Dashboard'daki borçlular listesi eşiği (kuruş).
   // Bu tutarın üstünde borcu olan aktif öğrenciler listelenir.
   debtAlertThreshold Int @default(500000) // 5000 TL
+
+  // Personelin eklediği öğrenciye, şifre yazılmadıysa atanan ortak şifre.
+  // Personel öğrenciye söyleyebilsin diye bilerek düz metin tutulur; bu
+  // yüzden yalnızca öğrenci hesapları için kullanılır, personel için değil.
+  defaultStudentPassword String?
 
   updatedAt DateTime @updatedAt
 }

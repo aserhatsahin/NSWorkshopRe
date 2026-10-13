@@ -40,6 +40,8 @@ export type OwnPanel =
       state: "READY";
       profileId: string;
       photoUpdatedAt: Date | null;
+      // Şifreyi öğrenci değil atölye belirlediyse true.
+      mustChangePassword: boolean;
       fullName: string;
       status: StudentStatus;
       group: Prisma.LessonGroupGetPayload<{ select: typeof groupSelect }> | null;
@@ -70,6 +72,7 @@ export async function getOwnPanel(): Promise<OwnPanel | null> {
       status: true,
       defaultGroup: { select: groupSelect },
       photo: { select: { updatedAt: true } },
+      user: { select: { mustChangePassword: true } },
     },
   });
   if (!profile) {
@@ -98,6 +101,7 @@ export async function getOwnPanel(): Promise<OwnPanel | null> {
     state: "READY",
     profileId: profile.id,
     photoUpdatedAt: profile.photo?.updatedAt ?? null,
+    mustChangePassword: profile.user?.mustChangePassword ?? false,
     fullName: profile.fullName,
     status: profile.status,
     group: profile.defaultGroup,

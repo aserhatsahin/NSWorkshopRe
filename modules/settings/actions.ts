@@ -11,6 +11,7 @@ export async function updateSettingsAction(_previous: FormState, formData: FormD
   const parsed = settingsFormSchema.safeParse({
     defaultPeriodPrice: formData.get("defaultPeriodPrice"),
     debtAlertThreshold: formData.get("debtAlertThreshold"),
+    defaultStudentPassword: formData.get("defaultStudentPassword"),
   });
   if (!parsed.success) {
     return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values };

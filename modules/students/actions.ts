@@ -16,6 +16,7 @@ import {
   createStudent,
   deleteStudent,
   registerStudent,
+  resetStudentPasswordToDefault,
   setStudentPassword,
   updateStudent,
 } from "./service";
@@ -39,7 +40,8 @@ export async function createStudentAction(_previous: FormState, formData: FormDa
     return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values };
   }
 
-  // İlk şifre isteğe bağlıdır; boş bırakılırsa öğrenci şifresiz oluşturulur.
+  // İlk şifre isteğe bağlıdır; boş bırakılırsa varsayılan öğrenci şifresi
+  // (tanımlıysa) atanır.
   const rawPassword = formData.get("password");
   let initialPassword: string | undefined;
   if (typeof rawPassword === "string" && rawPassword !== "") {
@@ -184,4 +186,15 @@ export async function deleteStudentAction(studentId: string): Promise<FormState>
   }
 
   redirect("/students");
+}
+
+export async function resetStudentPasswordToDefaultAction(studentId: string): Promise<FormState> {
+  try {
+    await resetStudentPasswordToDefault(studentId);
+  } catch (error) {
+    return { error: toErrorMessage(error) };
+  }
+
+  refresh();
+  return { success: "Varsayılan şifre verildi." };
 }

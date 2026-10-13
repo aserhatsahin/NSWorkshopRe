@@ -27,7 +27,7 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
   const passwordHash = await hashPassword(newPassword);
 
   await prisma.$transaction(async (tx) => {
-    await tx.user.update({ where: { id: user.id }, data: { passwordHash } });
+    await tx.user.update({ where: { id: user.id }, data: { passwordHash, mustChangePassword: false } });
     // Şifre ya da hash'i log'a yazılmaz.
     await logAudit(tx, { actorId: user.id, action: "PASSWORD_CHANGED" });
   });
