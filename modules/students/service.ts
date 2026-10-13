@@ -1,9 +1,7 @@
 import bcrypt from "bcryptjs";
-import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { DomainError } from "@/lib/errors";
 import { Prisma, type StudentStatus } from "@/lib/generated/prisma/client";
-import { UnauthenticatedError } from "@/lib/permissions/errors";
 import { requirePermission } from "@/lib/permissions/guard";
 import { logAudit } from "@/modules/audit/service";
 import type { RegisterInput, StudentFormInput } from "./schema";
@@ -263,20 +261,5 @@ export async function changeStudentStatus(id: string, to: StudentStatus): Promis
       targetStudentId: id,
       metadata: { from: student.status, to },
     });
-  });
-}
-
-export type OwnStudentProfile = { fullName: string; status: StudentStatus };
-
-// Öğrencinin kendi paneli için. Kimlik parametreyle alınmaz, oturumdan
-// okunur; böylece bir öğrenci başkasının id'siyle çağıramaz.
-export async function getOwnStudentProfile(): Promise<OwnStudentProfile | null> {
-  const user = await getCurrentUser();
-  if (!user) {
-    throw new UnauthenticatedError();
-  }
-  return prisma.studentProfile.findUnique({
-    where: { userId: user.id },
-    select: { fullName: true, status: true },
   });
 }
