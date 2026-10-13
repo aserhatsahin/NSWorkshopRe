@@ -61,7 +61,7 @@ export async function listAuditLogs(
       metadata: log.metadata,
       createdAt: log.createdAt,
       actor: {
-        name: log.actor.staffProfile?.fullName ?? log.actor.studentProfile?.fullName ?? log.actor.email ?? "Bilinmeyen kullanıcı",
+        name: log.actor.staffProfile?.fullName ?? log.actor.studentProfile?.fullName ?? log.actor.email ?? "Silinmiş kullanıcı",
         role: log.actor.role,
       },
       student: log.targetStudent,

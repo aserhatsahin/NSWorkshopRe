@@ -153,3 +153,35 @@ export async function resetStaffPassword(id: string, input: PasswordFormInput): 
     await logAudit(tx, { actorId: actor.id, action: "STAFF_PASSWORD_RESET", metadata: { staffUserId: id } });
   });
 }
+
+// Sistemde yapılan her işlem audit log'a yazıldığı için "hiç audit kaydı
+// yok" demek "hiç işlem yapmamış" demektir.
+export async function isStaffDeletable(id: string): Promise<boolean> {
+  await requirePermission("staff.manage");
+  return (await prisma.auditLog.count({ where: { actorId: id } })) === 0;
+}
+
+// Yalnızca hiç işlem yapmamış personel hesabı silinebilir; işlem yapmış
+// olan pasife alınır, çünkü geçmiş kayıtlarda adı geçer.
+export async function deleteStaff(id: string): Promise<void> {
+  const actor = await requirePermission("staff.manage");
+
+  await prisma.$transaction(async (tx) => {
+    const staff = await tx.user.findFirst({ where: { id, ...STAFF_ONLY }, select: staffSelect });
+    if (!staff) {
+      throw new DomainError(NOT_FOUND);
+    }
+    if ((await tx.auditLog.count({ where: { actorId: id } })) > 0) {
+      throw new DomainError("Bu personel sistemde işlem yapmış; silinemez. Pasife alabilirsin.");
+    }
+
+    await tx.staffProfile.deleteMany({ where: { userId: id } });
+    await tx.user.delete({ where: { id } });
+    const member = toStaffMember(staff);
+    await logAudit(tx, {
+      actorId: actor.id,
+      action: "STAFF_DELETED",
+      metadata: { fullName: member.fullName, email: member.email },
+    });
+  });
+}

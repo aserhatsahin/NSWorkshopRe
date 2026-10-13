@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { formValues, toErrorMessage, type FormState } from "@/lib/action-state";
 import { passwordFormSchema, staffCreateSchema, staffUpdateSchema } from "./schema";
-import { createStaff, resetStaffPassword, setStaffActive, updateStaff } from "./service";
+import { createStaff, deleteStaff, resetStaffPassword, setStaffActive, updateStaff } from "./service";
 
 const SECRET_FIELDS = ["password"] as const;
 
@@ -75,4 +75,14 @@ export async function resetStaffPasswordAction(
   }
 
   return { success: "Şifre değiştirildi." };
+}
+
+export async function deleteStaffAction(staffId: string): Promise<FormState> {
+  try {
+    await deleteStaff(staffId);
+  } catch (error) {
+    return { error: toErrorMessage(error) };
+  }
+
+  redirect("/staff");
 }

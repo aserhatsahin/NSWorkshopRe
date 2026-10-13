@@ -16,6 +16,8 @@ const productSelect = {
   name: true,
   defaultPrice: true,
   isActive: true,
+  // Silinebilir mi sorusu için; iade edilmiş satışlar da sayılır.
+  _count: { select: { sales: true } },
 } satisfies Prisma.ProductSelect;
 
 export type ProductSummary = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
@@ -64,7 +66,7 @@ export async function updateProduct(id: string, input: ProductFormInput): Promis
   });
 }
 
-// Ürün silinmez, pasife alınır: geçmiş satışlar ürüne bağlı kalır.
+// Satılmış ürün silinmez, pasife alınır: geçmiş satışlar ürüne bağlı kalır.
 export async function setProductActive(id: string, isActive: boolean): Promise<void> {
   const actor = await requirePermission("product.manage");
 
@@ -74,6 +76,29 @@ export async function setProductActive(id: string, isActive: boolean): Promise<v
       throw new DomainError(PRODUCT_NOT_FOUND);
     }
     await logAudit(tx, { actorId: actor.id, action: "PRODUCT_UPDATED", metadata: { productId: id, isActive } });
+  });
+}
+
+export function isProductDeletable(product: { _count: { sales: number } }): boolean {
+  return product._count.sales === 0;
+}
+
+// Yalnızca hiç satılmamış ürün silinebilir. Satılmış ürünün silinmesi
+// borçları silmez ama satışın "ne satıldı" bilgisini boşta bırakırdı.
+export async function deleteProduct(id: string): Promise<void> {
+  const actor = await requirePermission("product.manage");
+
+  await prisma.$transaction(async (tx) => {
+    const product = await tx.product.findUnique({ where: { id }, select: productSelect });
+    if (!product) {
+      throw new DomainError(PRODUCT_NOT_FOUND);
+    }
+    if (!isProductDeletable(product)) {
+      throw new DomainError("Bu ürünün satışı var; silinemez. Pasife alabilirsin.");
+    }
+
+    await tx.product.delete({ where: { id } });
+    await logAudit(tx, { actorId: actor.id, action: "PRODUCT_DELETED", metadata: { name: product.name } });
   });
 }
 
