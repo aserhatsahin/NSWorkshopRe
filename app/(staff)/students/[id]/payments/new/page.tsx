@@ -18,7 +18,7 @@ const METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({ value: method, label: 
 export default function NewPaymentPage({ params }: NewPaymentPageProps) {
   return (
     <div className="flex flex-col gap-6">
-      <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
+      <Suspense fallback={<p className="text-muted">Yükleniyor…</p>}>
         <NewPayment params={params} />
       </Suspense>
     </div>
@@ -37,10 +37,10 @@ async function NewPayment({ params }: NewPaymentPageProps) {
   return (
     <>
       <div>
-        <Link href={`/students/${student.id}`} className="text-sm text-zinc-500 hover:underline">
+        <Link href={`/students/${student.id}`} className="text-sm text-muted hover:underline">
           ← {student.fullName}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Ödeme al</h1>
+        <h1 className="mt-2 font-display text-3xl">Ödeme al</h1>
       </div>
 
       <dl className="grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
@@ -50,15 +50,15 @@ async function NewPayment({ params }: NewPaymentPageProps) {
           { label: "Malzeme", value: debt.material },
           { label: "Diğer", value: debt.other },
         ].map((item) => (
-          <div key={item.label} className="rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800">
-            <dt className="text-sm text-zinc-500">{item.label}</dt>
+          <div key={item.label} className="rounded-md border border-line bg-surface px-3 py-2">
+            <dt className="text-sm text-muted">{item.label}</dt>
             <dd className="font-medium">{formatKurus(item.value)}</dd>
           </div>
         ))}
       </dl>
 
       {debt.total <= 0 ? (
-        <p className="max-w-md text-sm text-zinc-500">
+        <p className="max-w-md text-sm text-muted">
           Bu öğrencinin borcu yok. Ödeme borçtan fazla olamayacağı için şu an ödeme alınamaz.
         </p>
       ) : (

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { kurusToLiraInput } from "@/lib/money";
@@ -11,29 +10,23 @@ import {
   updateStudentAction,
 } from "@/modules/students/actions";
 import { getStudent } from "@/modules/students/service";
-import { allowedStatusTransitions, STUDENT_STATUS_LABELS } from "@/modules/students/status";
-import { StudentForm } from "../student-form";
-import { PeriodList } from "./period-list";
+import { allowedStatusTransitions } from "@/modules/students/status";
+import { StudentForm } from "../../../student-form";
 import { StatusActions } from "./status-actions";
 
-export const metadata: Metadata = { title: "Öğrenci" };
+export const metadata: Metadata = { title: "Öğrenci bilgileri" };
 
-type StudentPageProps = { params: Promise<{ id: string }> };
+type StudentInfoPageProps = { params: Promise<{ id: string }> };
 
-export default function StudentPage({ params }: StudentPageProps) {
+export default function StudentInfoPage({ params }: StudentInfoPageProps) {
   return (
-    <div className="flex flex-col gap-6">
-      <Link href="/students" className="text-sm text-zinc-500 hover:underline">
-        ← Öğrenciler
-      </Link>
-      <Suspense fallback={<p className="text-zinc-500">Yükleniyor…</p>}>
-        <StudentDetail params={params} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<p className="text-muted">Yükleniyor…</p>}>
+      <StudentInfo params={params} />
+    </Suspense>
   );
 }
 
-async function StudentDetail({ params }: StudentPageProps) {
+async function StudentInfo({ params }: StudentInfoPageProps) {
   const { id } = await params;
   const student = await getStudent(id);
   if (!student) {
@@ -51,16 +44,8 @@ async function StudentDetail({ params }: StudentPageProps) {
 
   return (
     <>
-      <div>
-        <h1 className="text-2xl font-semibold">{student.fullName}</h1>
-        <p className="mt-1 text-zinc-500">
-          {STUDENT_STATUS_LABELS[student.status]}
-          {currentGroup ? ` · ${formatGroupName(currentGroup)}` : ""}
-        </p>
-      </div>
-
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Durum</h2>
+        <h2 className="font-display text-xl">Durum</h2>
         <StatusActions
           // Durum değişince buton durumları (hata mesajı dahil) sıfırlansın.
           key={student.status}
@@ -71,10 +56,8 @@ async function StudentDetail({ params }: StudentPageProps) {
         />
       </section>
 
-      <PeriodList studentId={student.id} canOpenPeriod={student.status === "ACTIVE"} />
-
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Bilgiler</h2>
+        <h2 className="font-display text-xl">Bilgiler</h2>
         <StudentForm
           action={updateStudentAction.bind(null, student.id)}
           submitLabel="Kaydet"
