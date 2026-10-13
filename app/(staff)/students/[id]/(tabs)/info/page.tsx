@@ -16,7 +16,7 @@ import {
 import { getStudent, getStudentLogin } from "@/modules/students/service";
 import { allowedStatusTransitions } from "@/modules/students/status";
 import { StudentForm } from "../../../student-form";
-import { StatusActions } from "./status-actions";
+import { StatusActions } from "../status-actions";
 
 export const metadata: Metadata = { title: "Öğrenci bilgileri" };
 
@@ -50,17 +50,20 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
 
   return (
     <>
-      <section className="flex flex-col gap-3">
-        <h2 className="font-display text-xl">Durum</h2>
-        <StatusActions
-          // Durum değişince buton durumları (hata mesajı dahil) sıfırlansın.
-          key={student.status}
-          canApprove={student.status === "PENDING"}
-          transitions={allowedStatusTransitions(student.status)}
-          approveAction={approveStudentAction.bind(null, student.id)}
-          changeStatusAction={changeStudentStatusAction.bind(null, student.id)}
-        />
-      </section>
+      {/* Onay bekleyen kayıtta onay/ret düğmeleri sayfanın üstündeki kutuda durur. */}
+      {student.status !== "PENDING" ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-xl">Durum</h2>
+          <StatusActions
+            // Durum değişince buton durumları (hata mesajı dahil) sıfırlansın.
+            key={student.status}
+            canApprove={false}
+            transitions={allowedStatusTransitions(student.status)}
+            approveAction={approveStudentAction.bind(null, student.id)}
+            changeStatusAction={changeStudentStatusAction.bind(null, student.id)}
+          />
+        </section>
+      ) : null}
 
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-xl">Bilgiler</h2>
