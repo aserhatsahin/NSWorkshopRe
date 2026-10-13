@@ -2,13 +2,14 @@ import { addDays } from "@/lib/dates";
 import type { AttendanceStatus, PeriodStatus, StudentStatus } from "@/lib/generated/prisma/client";
 import { LESSONS_PER_PERIOD } from "@/modules/periods/lessons";
 
-type GroupRef = { id: string; dayOfWeek: number; startTime: string; endTime: string; label: string | null };
+export type GroupRef = { id: string; dayOfWeek: number; startTime: string; endTime: string; label: string | null };
 
 export type DashboardStudent = {
   id: string;
   fullName: string;
   status: StudentStatus;
   defaultGroup: GroupRef | null;
+  photo: { updatedAt: Date } | null;
   // İptal edilmiş dönemler hariç.
   periods: {
     id: string;
@@ -19,7 +20,7 @@ export type DashboardStudent = {
   }[];
 };
 
-type StudentRef = Pick<DashboardStudent, "id" | "fullName" | "defaultGroup">;
+export type StudentRef = Pick<DashboardStudent, "id" | "fullName" | "defaultGroup" | "photo">;
 
 export type StaffDashboard = {
   pendingApproval: StudentRef[];
@@ -36,7 +37,7 @@ function byName(a: { fullName: string }, b: { fullName: string }): number {
 }
 
 function toRef(student: DashboardStudent): StudentRef {
-  return { id: student.id, fullName: student.fullName, defaultGroup: student.defaultGroup };
+  return { id: student.id, fullName: student.fullName, defaultGroup: student.defaultGroup, photo: student.photo };
 }
 
 // Her aktif öğrenci en fazla bir takip listesinde yer alır:
