@@ -39,6 +39,7 @@ export type OwnPanel =
   | {
       state: "READY";
       profileId: string;
+      photoUpdatedAt: Date | null;
       fullName: string;
       status: StudentStatus;
       group: Prisma.LessonGroupGetPayload<{ select: typeof groupSelect }> | null;
@@ -63,7 +64,13 @@ export async function getOwnPanel(): Promise<OwnPanel | null> {
 
   const profile = await prisma.studentProfile.findUnique({
     where: { userId: user.id },
-    select: { id: true, fullName: true, status: true, defaultGroup: { select: groupSelect } },
+    select: {
+      id: true,
+      fullName: true,
+      status: true,
+      defaultGroup: { select: groupSelect },
+      photo: { select: { updatedAt: true } },
+    },
   });
   if (!profile) {
     return null;
@@ -90,6 +97,7 @@ export async function getOwnPanel(): Promise<OwnPanel | null> {
   return {
     state: "READY",
     profileId: profile.id,
+    photoUpdatedAt: profile.photo?.updatedAt ?? null,
     fullName: profile.fullName,
     status: profile.status,
     group: profile.defaultGroup,

@@ -6,6 +6,7 @@ import { primaryButton, secondaryButton } from "@/components/button-styles";
 import { StatusBadge } from "@/components/status-badge";
 import type { StudentStatus } from "@/lib/generated/prisma/client";
 import { formatGroupName } from "@/modules/groups/format";
+import { photoUrl } from "@/modules/photos/rules";
 import { listStudents } from "@/modules/students/service";
 import { isStudentStatus } from "@/modules/students/status";
 
@@ -117,7 +118,11 @@ async function StudentList({ searchParams }: { searchParams: SearchParams }) {
                 className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-paper"
               >
                 <span className="flex min-w-0 items-center gap-3">
-                  <AvatarBlob name={student.fullName} pigmentSeed={student.defaultGroup?.id ?? student.id} />
+                  <AvatarBlob
+                    name={student.fullName}
+                    pigmentSeed={student.defaultGroup?.id ?? student.id}
+                    photoUrl={student.photo ? photoUrl(student.id, student.photo.updatedAt) : null}
+                  />
                   <span className="flex min-w-0 flex-col">
                     <span className="font-medium">{student.fullName}</span>
                     <span className="text-sm text-muted">
