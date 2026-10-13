@@ -54,6 +54,12 @@ async function main() {
       create: { id: SETTINGS_ID, defaultPeriodPrice: 400000 },
     });
 
+    // Örnek grup ve ürünler yalnızca yerel geliştirme içindir; canlı
+    // veritabanına uydurma veri yazılmasın diye açıkça istenmesi gerekir.
+    if (process.env.SEED_SAMPLE_DATA !== "true") {
+      return;
+    }
+
     if ((await prisma.lessonGroup.count()) === 0) {
       await prisma.lessonGroup.createMany({ data: SAMPLE_GROUPS });
     }
