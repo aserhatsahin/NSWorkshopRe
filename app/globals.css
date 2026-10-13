@@ -1,26 +1,144 @@
 @import "tailwindcss";
 
+/* Pigmentler gündüz ve gecede aynıdır; tema yalnızca kâğıdı, mürekkebi
+   ve dolu blokların hangi tonla boyandığını değiştirir. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --p-red: #e2572f;
+  --p-ochre: #e8b23a;
+  --p-green: #2f8f7a;
+  --p-blue: #3355c4;
+  --p-plum: #8a3f6b;
+
+  --debt-bg: #e2572f;
+  --debt-fg: #231f1c;
+  --hero-bg: #3355c4;
+  --hero-fg: #f6f1e7;
+  --nav-active-bg: #e2572f;
+  --nav-active-fg: #231f1c;
+  --edge: 1.5px;
+}
+
+/* Gündüz: krem kâğıt üstünde mürekkep. */
+:root,
+[data-theme="gunduz"] {
+  --paper: #f6f1e7;
+  --surface: #fffdf8;
+  --ink: #231f1c;
+  --muted: #6e6358;
+  --line: #e2d9c8;
+  --line-strong: #231f1c;
+  --danger: #b93a1c;
+  --success: #1f6f5e;
+  --nav-bg: #231f1c;
+  --nav-fg: #c9bfb0;
+  --nav-title: #f6f1e7;
+  --stat-bg: #231f1c;
+  --stat-fg: #f6f1e7;
+  --stat-muted: #c9bfb0;
+  --primary-bg: #231f1c;
+  --primary-fg: #f6f1e7;
+}
+
+/* Gece: koyu kâğıt üstünde krem; dolu bloklar tersine döner. */
+[data-theme="gece"] {
+  --paper: #1b1815;
+  --surface: #27221e;
+  --ink: #f3ecdf;
+  --muted: #a99e90;
+  --line: #3b342e;
+  --line-strong: #f3ecdf;
+  --danger: #f0876a;
+  --success: #6fcbb5;
+  --nav-bg: #100e0c;
+  --nav-fg: #a99e90;
+  --nav-title: #f3ecdf;
+  --stat-bg: #f3ecdf;
+  --stat-fg: #1b1815;
+  --stat-muted: #6e6358;
+  --primary-bg: #f3ecdf;
+  --primary-fg: #1b1815;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-nav: var(--nav-bg);
+  --color-nav-fg: var(--nav-fg);
+  --color-nav-title: var(--nav-title);
+  --color-nav-active: var(--nav-active-bg);
+  --color-nav-active-fg: var(--nav-active-fg);
+  --color-stat: var(--stat-bg);
+  --color-stat-fg: var(--stat-fg);
+  --color-stat-muted: var(--stat-muted);
+  --color-debt: var(--debt-bg);
+  --color-debt-fg: var(--debt-fg);
+  --color-hero: var(--hero-bg);
+  --color-hero-fg: var(--hero-fg);
+  --color-primary: var(--primary-bg);
+  --color-primary-fg: var(--primary-fg);
+  --color-p-red: var(--p-red);
+  --color-p-ochre: var(--p-ochre);
+  --color-p-green: var(--p-green);
+  --color-p-blue: var(--p-blue);
+  --color-p-plum: var(--p-plum);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-fraunces);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+@layer components {
+  /* Kalın mürekkep kenarı; gecede krem olur. */
+  .edge {
+    border: var(--edge) solid var(--line-strong);
+  }
+
+  /* Düzgün daire yerine boya lekesi. */
+  .blob {
+    border-radius: 58% 42% 55% 45% / 48% 60% 40% 52%;
+  }
+  .blob-alt {
+    border-radius: 42% 58% 38% 62% / 55% 45% 60% 40%;
+  }
+
+  .field {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+  }
+  .field:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 1px;
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+
+  .list {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  .list > li + li {
+    border-top: 1px solid var(--line);
+  }
+}
+
+dialog::backdrop {
+  background: rgb(16 14 12 / 0.6);
 }
