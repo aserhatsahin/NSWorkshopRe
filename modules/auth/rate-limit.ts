@@ -10,8 +10,10 @@ const RETENTION_MS = 24 * 60 * MINUTE;
 
 type Limit = { maxAttempts: number; windowMs: number };
 
-export function loginKey(email: string): string {
-  return `login:${email.trim().toLowerCase()}`;
+// E-posta da kullanıcı adı da aynı biçimde küçültülür; "Ayşe" ile "ayşe"
+// ayrı sayaç tutmasın.
+export function loginKey(identifier: string): string {
+  return `login:${identifier.trim().toLocaleLowerCase("tr")}`;
 }
 
 export function registerKey(ip: string): string {

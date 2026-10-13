@@ -7,7 +7,7 @@ import { hashPassword } from "@/modules/auth/password";
 import type { RegisterInput, StudentFormInput } from "./schema";
 import { canChangeStatus } from "./status";
 
-const EMAIL_TAKEN = "Bu e-posta ile kayıtlı bir kullanıcı zaten var.";
+const IDENTITY_TAKEN = "Bu e-posta ya da kullanıcı adı başka bir hesapta kullanılıyor.";
 const NOT_FOUND = "Öğrenci bulunamadı.";
 const STATUS_CHANGED_MEANWHILE = "Öğrencinin durumu bu sırada değişti. Sayfayı yenileyip tekrar dene.";
 
@@ -18,7 +18,7 @@ const studentSelect = {
   status: true,
   customPrice: true,
   createdAt: true,
-  user: { select: { email: true } },
+  user: { select: { email: true, username: true } },
   defaultGroup: { select: { id: true, dayOfWeek: true, startTime: true, endTime: true, label: true } },
 } satisfies Prisma.StudentProfileSelect;
 
@@ -93,6 +93,7 @@ export async function createStudent(input: StudentFormInput): Promise<{ id: stri
         data: {
           role: "STUDENT",
           email: input.email,
+          username: input.username,
           studentProfile: {
             create: {
               fullName: input.fullName,
@@ -112,7 +113,7 @@ export async function createStudent(input: StudentFormInput): Promise<{ id: stri
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      throw new DomainError(EMAIL_TAKEN);
+      throw new DomainError(IDENTITY_TAKEN);
     }
     throw error;
   }
@@ -129,6 +130,7 @@ export async function registerStudent(input: RegisterInput): Promise<void> {
         data: {
           role: "STUDENT",
           email: input.email,
+          username: input.username,
           passwordHash,
           studentProfile: {
             create: { fullName: input.fullName, phone: input.phone, status: "PENDING" },
@@ -145,7 +147,7 @@ export async function registerStudent(input: RegisterInput): Promise<void> {
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      throw new DomainError(EMAIL_TAKEN);
+      throw new DomainError(IDENTITY_TAKEN);
     }
     throw error;
   }
@@ -174,7 +176,7 @@ export async function updateStudent(id: string, input: StudentFormInput): Promis
           phone: true,
           customPrice: true,
           defaultGroupId: true,
-          user: { select: { email: true } },
+          user: { select: { email: true, username: true } },
         },
       });
       if (!current) {
@@ -193,8 +195,11 @@ export async function updateStudent(id: string, input: StudentFormInput): Promis
         },
       });
 
-      if (input.email !== current.user.email) {
-        await tx.user.update({ where: { id: current.userId }, data: { email: input.email } });
+      if (input.email !== current.user.email || input.username !== current.user.username) {
+        await tx.user.update({
+          where: { id: current.userId },
+          data: { email: input.email, username: input.username },
+        });
       }
 
       await logAudit(tx, {
@@ -206,6 +211,7 @@ export async function updateStudent(id: string, input: StudentFormInput): Promis
             fullName: current.fullName,
             phone: current.phone,
             email: current.user.email,
+            username: current.user.username,
             customPrice: current.customPrice,
             defaultGroupId: current.defaultGroupId,
           },
@@ -215,7 +221,7 @@ export async function updateStudent(id: string, input: StudentFormInput): Promis
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      throw new DomainError(EMAIL_TAKEN);
+      throw new DomainError(IDENTITY_TAKEN);
     }
     throw error;
   }
@@ -274,7 +280,7 @@ export async function changeStudentStatus(id: string, to: StudentStatus): Promis
   });
 }
 
-export type StudentLogin = { email: string | null; hasPassword: boolean };
+export type StudentLogin = { email: string | null; username: string | null; hasPassword: boolean };
 
 // Hash dışarı verilmez; yalnızca şifresinin olup olmadığı.
 export async function getStudentLogin(studentId: string): Promise<StudentLogin | null> {
@@ -282,13 +288,19 @@ export async function getStudentLogin(studentId: string): Promise<StudentLogin |
 
   const student = await prisma.studentProfile.findUnique({
     where: { id: studentId },
-    select: { user: { select: { email: true, passwordHash: true } } },
+    select: { user: { select: { email: true, username: true, passwordHash: true } } },
   });
-  return student ? { email: student.user.email, hasPassword: student.user.passwordHash !== null } : null;
+  return student
+    ? {
+        email: student.user.email,
+        username: student.user.username,
+        hasPassword: student.user.passwordHash !== null,
+      }
+    : null;
 }
 
 // Personelin eklediği öğrencinin şifresi olmaz; panele girebilmesi için
-// şifre buradan verilir. Giriş e-postayla yapıldığı için e-posta şarttır.
+// şifre buradan verilir. Giriş için bir kimlik (e-posta ya da kullanıcı adı) şarttır.
 export async function setStudentPassword(studentId: string, password: string): Promise<void> {
   const actor = await requirePermission("student.setPassword");
   const passwordHash = await hashPassword(password);
@@ -296,13 +308,13 @@ export async function setStudentPassword(studentId: string, password: string): P
   await prisma.$transaction(async (tx) => {
     const student = await tx.studentProfile.findUnique({
       where: { id: studentId },
-      select: { userId: true, user: { select: { email: true } } },
+      select: { userId: true, user: { select: { email: true, username: true } } },
     });
     if (!student) {
       throw new DomainError(NOT_FOUND);
     }
-    if (!student.user.email) {
-      throw new DomainError("Şifre vermek için önce öğrenciye bir e-posta ekle.");
+    if (!student.user.email && !student.user.username) {
+      throw new DomainError("Şifre vermek için önce öğrenciye bir e-posta ya da kullanıcı adı ekle.");
     }
 
     await tx.user.update({ where: { id: student.userId }, data: { passwordHash } });
