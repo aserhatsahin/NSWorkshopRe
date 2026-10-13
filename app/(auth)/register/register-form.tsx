@@ -34,9 +34,19 @@ export function RegisterForm() {
         name="email"
         type="email"
         autoComplete="email"
-        required
         defaultValue={values.email}
         errors={state.fieldErrors?.email}
+        hint="E-postan yoksa boş bırakıp kullanıcı adı yaz."
+      />
+      <FormField
+        label="Kullanıcı adı"
+        name="username"
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        defaultValue={values.username}
+        errors={state.fieldErrors?.username}
+        hint="E-posta yazdıysan isteğe bağlı. Girişte e-posta ya da kullanıcı adını kullanabilirsin."
       />
       <FormField
         label="Şifre"

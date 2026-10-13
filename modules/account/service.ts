@@ -32,3 +32,15 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
     await logAudit(tx, { actorId: user.id, action: "PASSWORD_CHANGED" });
   });
 }
+
+export type OwnIdentity = { email: string | null; username: string | null };
+
+// Hesabım sayfasında "hangi hesapla girdim" bilgisini göstermek için.
+export async function getOwnIdentity(): Promise<OwnIdentity> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthenticatedError();
+  }
+  const account = await prisma.user.findUnique({ where: { id: user.id }, select: { email: true, username: true } });
+  return { email: account?.email ?? null, username: account?.username ?? null };
+}

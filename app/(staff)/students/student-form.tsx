@@ -42,6 +42,15 @@ export function StudentForm({ action, initialValues = {}, groupOptions, submitLa
         errors={state.fieldErrors?.email}
         hint="İsteğe bağlı."
       />
+      <FormField
+        label="Kullanıcı adı"
+        name="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        defaultValue={values.username}
+        errors={state.fieldErrors?.username}
+        hint="İsteğe bağlı. E-postası olmayan öğrenci panele bununla girer."
+      />
       <SelectField
         // React, form action sonrası select'i sıfırladığı için seçim key ile geri yüklenir.
         key={values.defaultGroupId}

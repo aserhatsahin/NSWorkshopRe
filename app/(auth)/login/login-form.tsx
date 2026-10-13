@@ -12,12 +12,14 @@ export function LoginForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm font-medium">
-        E-posta
+        E-posta ya da kullanıcı adı
         <input
-          name="email"
-          type="email"
-          autoComplete="email"
-          defaultValue={state.email}
+          name="identifier"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          defaultValue={state.identifier}
           required
           className="field"
         />

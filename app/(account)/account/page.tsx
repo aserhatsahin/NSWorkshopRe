@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth/session";
+import { getOwnIdentity } from "@/modules/account/service";
 import { ChangePasswordForm } from "./change-password-form";
 
 export const metadata: Metadata = { title: "Hesabım" };
@@ -24,10 +25,11 @@ export default function AccountPage() {
 
 async function AccountSummary() {
   const user = await requireUser();
+  const identity = await getOwnIdentity();
 
   return (
     <p className="text-muted">
-      {user.email} · {ROLE_LABELS[user.role]}
+      {[identity.email, identity.username].filter(Boolean).join(" · ")} · {ROLE_LABELS[user.role]}
     </p>
   );
 }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { parseLiraToKurus } from "@/lib/money";
 import { passwordSchema } from "@/modules/auth/password";
+import { usernameSchema } from "@/modules/auth/username";
 
 function emptyToNull(value: unknown): unknown {
   return typeof value === "string" && value.trim() === "" ? null : value;
@@ -22,6 +23,8 @@ const optionalEmail = z.preprocess(
   z.email("Geçerli bir e-posta gir.").trim().toLowerCase().nullable(),
 );
 
+const optionalUsername = z.preprocess(emptyToNull, usernameSchema.nullable());
+
 // Formdan TL olarak gelir, kuruşa çevrilir.
 const optionalPrice = z.preprocess(emptyToNull, z.string().nullable()).transform((value, ctx) => {
   if (value === null) {
@@ -41,17 +44,26 @@ export const studentFormSchema = z.object({
   fullName,
   phone: optionalPhone,
   email: optionalEmail,
+  username: optionalUsername,
   customPrice: optionalPrice,
   defaultGroupId: optionalGroupId,
 });
 
 export type StudentFormInput = z.infer<typeof studentFormSchema>;
 
-export const registerSchema = z.object({
-  fullName,
-  phone: optionalPhone,
-  email: z.email("Geçerli bir e-posta gir.").trim().toLowerCase(),
-  password: passwordSchema,
-});
+// Girişte kullanılacak bir kimlik şart: e-posta ya da kullanıcı adı.
+// E-postası olmayan küçük öğrenciler yalnızca kullanıcı adıyla kaydolabilir.
+export const registerSchema = z
+  .object({
+    fullName,
+    phone: optionalPhone,
+    email: optionalEmail,
+    username: optionalUsername,
+    password: passwordSchema,
+  })
+  .refine((input) => input.email !== null || input.username !== null, {
+    path: ["username"],
+    message: "E-posta ya da kullanıcı adından en az birini yaz.",
+  });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

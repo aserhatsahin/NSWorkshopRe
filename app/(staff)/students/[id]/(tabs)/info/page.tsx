@@ -44,6 +44,8 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
     groupOptions.push({ value: currentGroup.id, label: `${formatGroupName(currentGroup)} (pasif)` });
   }
 
+  const loginIdentity = [login?.email, login?.username].filter(Boolean).join(" ya da ");
+
   return (
     <>
       <section className="flex flex-col gap-3">
@@ -68,6 +70,7 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
             fullName: student.fullName,
             phone: student.phone ?? "",
             email: student.user.email ?? "",
+            username: student.user.username ?? "",
             defaultGroupId: currentGroup?.id ?? "",
             customPrice: student.customPrice === null ? "" : kurusToLiraInput(student.customPrice),
           }}
@@ -76,22 +79,23 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
 
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-xl">Giriş hesabı</h2>
-        {login?.email ? (
+        {loginIdentity ? (
           <>
             <p className="max-w-md text-sm text-muted">
-              {login.hasPassword
-                ? `Öğrenci ${login.email} ile panele girebiliyor. Şifresini unuttuysa buradan yenisini verebilirsin.`
-                : `Öğrencinin şifresi yok, panele giremiyor. Şifre verirsen ${login.email} ile giriş yapabilir.`}
+              {login?.hasPassword
+                ? `Öğrenci ${loginIdentity} ile panele girebiliyor. Şifresini unuttuysa buradan yenisini verebilirsin.`
+                : `Öğrencinin şifresi yok, panele giremiyor. Şifre verirsen ${loginIdentity} ile giriş yapabilir.`}
             </p>
             <PasswordForm
               action={setStudentPasswordAction.bind(null, student.id)}
-              label={login.hasPassword ? "Yeni şifre" : "Şifre"}
-              submitLabel={login.hasPassword ? "Şifreyi değiştir" : "Şifre ver"}
+              label={login?.hasPassword ? "Yeni şifre" : "Şifre"}
+              submitLabel={login?.hasPassword ? "Şifreyi değiştir" : "Şifre ver"}
             />
           </>
         ) : (
           <p className="max-w-md text-sm text-muted">
-            Öğrencinin panele girebilmesi için önce yukarıdan bir e-posta ekleyip kaydet; sonra burada şifre verebilirsin.
+            Öğrencinin panele girebilmesi için önce yukarıdan bir e-posta ya da kullanıcı adı ekleyip kaydet; sonra
+            burada şifre verebilirsin.
           </p>
         )}
       </section>

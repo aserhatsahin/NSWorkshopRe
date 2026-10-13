@@ -121,7 +121,11 @@ async function StudentList({ searchParams }: { searchParams: SearchParams }) {
                   <span className="flex min-w-0 flex-col">
                     <span className="font-medium">{student.fullName}</span>
                     <span className="text-sm text-muted">
-                      {[student.defaultGroup && formatGroupName(student.defaultGroup), student.phone, student.user.email]
+                      {[
+                        student.defaultGroup && formatGroupName(student.defaultGroup),
+                        student.phone,
+                        student.user.email ?? student.user.username,
+                      ]
                         .filter(Boolean)
                         .join(" · ") || "Grup ve iletişim bilgisi yok"}
                     </span>

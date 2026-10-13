@@ -25,6 +25,7 @@ function readStudentForm(formData: FormData) {
     fullName: formData.get("fullName"),
     phone: formData.get("phone"),
     email: formData.get("email"),
+    username: formData.get("username"),
     customPrice: formData.get("customPrice"),
     defaultGroupId: formData.get("defaultGroupId"),
   });
@@ -105,6 +106,7 @@ export async function registerStudentAction(_previous: FormState, formData: Form
     fullName: formData.get("fullName"),
     phone: formData.get("phone"),
     email: formData.get("email"),
+    username: formData.get("username"),
     password: formData.get("password"),
   });
   if (!parsed.success) {
@@ -126,7 +128,8 @@ export async function registerStudentAction(_previous: FormState, formData: Form
 
   try {
     await signIn("credentials", {
-      email: parsed.data.email,
+      // Şema ikisinden en az birinin dolu olduğunu garanti eder.
+      identifier: parsed.data.email ?? parsed.data.username!,
       password: parsed.data.password,
       redirectTo: "/",
     });
