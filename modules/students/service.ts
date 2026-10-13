@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/permissions/guard";
 import { logAudit } from "@/modules/audit/service";
 import { hashPassword } from "@/modules/auth/password";
 import type { RegisterInput, StudentFormInput } from "./schema";
+import { resolveInitialPassword } from "./initial-password";
 import { canChangeStatus } from "./status";
 
 const IDENTITY_TAKEN = "Bu e-posta ya da kullanıcı adı başka bir hesapta kullanılıyor.";
@@ -81,17 +82,25 @@ export async function getStudent(id: string): Promise<StudentSummary | null> {
 }
 
 // Personelin eklediği öğrenci onay beklemez; kaydı açan kişi zaten yetkili.
-// initialPassword verilirse öğrenci hemen panele girebilir; verilmezse şifre
-// sonradan Bilgiler sekmesinden verilir.
-export async function createStudent(input: StudentFormInput, initialPassword?: string): Promise<{ id: string }> {
+// İlk şifre: personel yazdıysa o; yazmadıysa atölyenin varsayılan öğrenci
+// şifresi; o da yoksa öğrenci şifresiz oluşur (bkz. initial-password.ts).
+export async function createStudent(input: StudentFormInput, typedPassword?: string): Promise<{ id: string }> {
   const actor = await requirePermission("student.create");
-  if (initialPassword !== undefined) {
-    await requirePermission("student.setPassword");
-    if (!input.email && !input.username) {
-      throw new DomainError("Şifre vermek için e-posta ya da kullanıcı adı da yaz.");
-    }
+  const hasLoginIdentity = Boolean(input.email || input.username);
+  if (typedPassword !== undefined && !hasLoginIdentity) {
+    throw new DomainError("Şifre vermek için e-posta ya da kullanıcı adı da yaz.");
   }
-  const passwordHash = initialPassword === undefined ? null : await hashPassword(initialPassword);
+
+  const settings = await prisma.settings.findFirst({ select: { defaultStudentPassword: true } });
+  const initial = resolveInitialPassword({
+    typed: typedPassword,
+    hasLoginIdentity,
+    defaultPassword: settings?.defaultStudentPassword ?? null,
+  });
+  if (initial.kind !== "none") {
+    await requirePermission("student.setPassword");
+  }
+  const passwordHash = initial.kind === "none" ? null : await hashPassword(initial.password);
   if (input.customPrice !== null) {
     await requirePermission("period.setPrice");
   }
@@ -106,6 +115,8 @@ export async function createStudent(input: StudentFormInput, initialPassword?: s
           email: input.email,
           username: input.username,
           passwordHash,
+          // Şifreyi öğrenci seçmedi; kendi şifresini koyması hatırlatılır.
+          mustChangePassword: passwordHash !== null,
           studentProfile: {
             create: {
               fullName: input.fullName,
@@ -329,10 +340,20 @@ export async function setStudentPassword(studentId: string, password: string): P
       throw new DomainError("Şifre vermek için önce öğrenciye bir e-posta ya da kullanıcı adı ekle.");
     }
 
-    await tx.user.update({ where: { id: student.userId }, data: { passwordHash } });
+    await tx.user.update({ where: { id: student.userId }, data: { passwordHash, mustChangePassword: true } });
     // Şifre ya da hash'i log'a yazılmaz.
     await logAudit(tx, { actorId: actor.id, action: "STUDENT_PASSWORD_SET", targetStudentId: studentId });
   });
+}
+
+// Şifresini unutan öğrenci için: atölyenin varsayılan şifresine döndürür.
+export async function resetStudentPasswordToDefault(studentId: string): Promise<void> {
+  await requirePermission("student.setPassword");
+  const settings = await prisma.settings.findFirst({ select: { defaultStudentPassword: true } });
+  if (!settings?.defaultStudentPassword) {
+    throw new DomainError("Varsayılan öğrenci şifresi tanımlı değil. Atölye sahibi Ayarlar'dan belirleyebilir.");
+  }
+  await setStudentPassword(studentId, settings.defaultStudentPassword);
 }
 
 const usageSelect = {

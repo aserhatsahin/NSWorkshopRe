@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { formatGroupName } from "@/modules/groups/format";
 import { listGroups } from "@/modules/groups/service";
+import { getDefaultStudentPassword } from "@/modules/settings/service";
 import { createStudentAction } from "@/modules/students/actions";
 import { StudentForm } from "../student-form";
 
@@ -25,12 +26,13 @@ export default function NewStudentPage() {
 }
 
 async function NewStudentForm() {
-  const groups = await listGroups({ activeOnly: true });
+  const [groups, defaultPassword] = await Promise.all([listGroups({ activeOnly: true }), getDefaultStudentPassword()]);
 
   return (
     <StudentForm
       action={createStudentAction}
       withPassword
+      defaultPassword={defaultPassword}
       submitLabel="Öğrenciyi ekle"
       groupOptions={groups.map((group) => ({ value: group.id, label: formatGroupName(group) }))}
     />

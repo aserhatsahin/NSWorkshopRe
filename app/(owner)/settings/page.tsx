@@ -27,6 +27,7 @@ async function WorkshopSettingsForm() {
       initialValues={{
         defaultPeriodPrice: settings ? kurusToLiraInput(settings.defaultPeriodPrice) : "",
         debtAlertThreshold: settings ? kurusToLiraInput(settings.debtAlertThreshold) : "",
+        defaultStudentPassword: settings?.defaultStudentPassword ?? "",
       }}
     />
   );

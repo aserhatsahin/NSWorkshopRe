@@ -13,6 +13,8 @@ type StudentFormProps = {
   groupOptions: { value: string; label: string }[];
   // Yalnızca yeni öğrenci eklerken ilk şifre de sorulur.
   withPassword?: boolean;
+  // Tanımlıysa, şifre boş bırakıldığında atanacak ortak şifre.
+  defaultPassword?: string | null;
   submitLabel: string;
 };
 
@@ -21,6 +23,7 @@ export function StudentForm({
   initialValues = {},
   groupOptions,
   withPassword = false,
+  defaultPassword = null,
   submitLabel,
 }: StudentFormProps) {
   const [state, formAction, isPending] = useActionState(action, {});
@@ -67,7 +70,11 @@ export function StudentForm({
           autoComplete="new-password"
           minLength={8}
           errors={state.fieldErrors?.password}
-          hint="İsteğe bağlı, en az 8 karakter. Yazarsan öğrenci e-postası ya da kullanıcı adıyla hemen girebilir; şifreyi ona sen iletirsin. Boş bırakırsan sonradan Bilgiler sekmesinden verebilirsin."
+          hint={
+            defaultPassword
+              ? `Boş bırakırsan varsayılan şifre atanır: ${defaultPassword}. Öğrenciye e-postası ya da kullanıcı adıyla birlikte bunu söyle. Farklı bir şifre istersen buraya yaz (en az 8 karakter).`
+              : "İsteğe bağlı, en az 8 karakter. Yazarsan öğrenci e-postası ya da kullanıcı adıyla hemen girebilir; şifreyi ona sen iletirsin. Boş bırakırsan sonradan Bilgiler sekmesinden verebilirsin."
+          }
         />
       ) : null}
       <SelectField

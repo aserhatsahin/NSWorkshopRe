@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseLiraToKurus } from "@/lib/money";
+import { passwordSchema } from "@/modules/auth/password";
 import { positiveLiraAmount } from "@/modules/finance/schema";
 
 export const settingsFormSchema = z.object({
@@ -13,6 +14,11 @@ export const settingsFormSchema = z.object({
     }
     return kurus;
   }),
+  // Boş bırakılırsa varsayılan şifre kapanır; öğrenciler şifresiz oluşturulur.
+  defaultStudentPassword: z.preprocess(
+    (value) => (typeof value === "string" && value === "" ? null : value),
+    passwordSchema.nullable(),
+  ),
 });
 
 export type SettingsFormInput = z.infer<typeof settingsFormSchema>;
