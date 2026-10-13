@@ -71,8 +71,11 @@ async function GroupDetail({ params }: GroupPageProps) {
 
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-xl">Öğrenciler ({students.length})</h2>
+        <p className="text-sm text-muted">
+          Varsayılan grubu bu olanlar ve bu grupta aktif dönemi bulunanlar.
+        </p>
         {students.length === 0 ? (
-          <p className="text-muted">Bu grubu varsayılan grup olarak kullanan öğrenci yok.</p>
+          <p className="text-muted">Bu grupta öğrenci yok.</p>
         ) : (
           <ul className="list">
             {students.map((student) => (
