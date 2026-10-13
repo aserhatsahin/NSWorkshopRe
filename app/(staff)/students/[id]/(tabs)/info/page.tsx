@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PasswordForm } from "@/components/password-form";
+import { PhotoUploader } from "@/components/photo-uploader";
 import { kurusToLiraInput } from "@/lib/money";
 import { formatGroupName } from "@/modules/groups/format";
 import { listGroups } from "@/modules/groups/service";
+import { removeStudentPhotoAction, setStudentPhotoAction } from "@/modules/photos/actions";
 import {
   approveStudentAction,
   changeStudentStatusAction,
@@ -77,6 +79,18 @@ async function StudentInfo({ params }: StudentInfoPageProps) {
             defaultGroupId: currentGroup?.id ?? "",
             customPrice: student.customPrice === null ? "" : kurusToLiraInput(student.customPrice),
           }}
+        />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-display text-xl">Profil fotoğrafı</h2>
+        <p className="max-w-md text-sm text-muted">
+          Öğrenci kendi panelinden de yükleyebilir. Fotoğrafı yalnızca personel ve öğrencinin kendisi görür.
+        </p>
+        <PhotoUploader
+          hasPhoto={student.photo !== null}
+          uploadAction={setStudentPhotoAction.bind(null, student.id)}
+          removeAction={removeStudentPhotoAction.bind(null, student.id)}
         />
       </section>
 

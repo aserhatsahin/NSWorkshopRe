@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AvatarBlob } from "@/components/avatar-blob";
 import { DebtCards } from "@/components/debt-cards";
 import { LessonMarks } from "@/components/lesson-marks";
+import { PhotoUploader } from "@/components/photo-uploader";
 import { Badge, StatusBadge } from "@/components/status-badge";
 import { addDays, formatDate, workshopToday } from "@/lib/dates";
 import { formatKurus } from "@/lib/money";
@@ -11,6 +12,8 @@ import { pigmentFor } from "@/lib/pigment";
 import { TRANSACTION_TYPE_LABELS } from "@/modules/finance/ledger";
 import { DAY_NAMES, formatGroupName } from "@/modules/groups/format";
 import { LESSONS_PER_PERIOD } from "@/modules/periods/lessons";
+import { removeOwnPhotoAction, setOwnPhotoAction } from "@/modules/photos/actions";
+import { photoUrl } from "@/modules/photos/rules";
 import { getOwnPanel, type OwnPeriod } from "@/modules/student-panel/service";
 
 export const metadata: Metadata = { title: "Panelim" };
@@ -107,13 +110,23 @@ async function OwnPanel() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        <AvatarBlob name={panel.fullName} pigmentSeed={panel.group?.id ?? panel.profileId} size="lg" />
+        <AvatarBlob
+          name={panel.fullName}
+          pigmentSeed={panel.group?.id ?? panel.profileId}
+          size="xl"
+          photoUrl={panel.photoUpdatedAt ? photoUrl(panel.profileId, panel.photoUpdatedAt) : null}
+        />
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-4xl leading-none">Merhaba {firstName}</h1>
           <div className="flex flex-wrap gap-1.5">
             <StatusBadge status={panel.status} />
             {panel.group ? <Badge className={pigmentFor(panel.group.id)}>{formatGroupName(panel.group)}</Badge> : null}
           </div>
+          <PhotoUploader
+            hasPhoto={panel.photoUpdatedAt !== null}
+            uploadAction={setOwnPhotoAction}
+            removeAction={removeOwnPhotoAction}
+          />
         </div>
       </div>
 

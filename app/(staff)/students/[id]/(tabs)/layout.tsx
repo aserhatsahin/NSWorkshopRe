@@ -8,6 +8,7 @@ import { Badge, StatusBadge } from "@/components/status-badge";
 import { pigmentFor } from "@/lib/pigment";
 import { getStudentDebt } from "@/modules/finance/service";
 import { formatGroupName } from "@/modules/groups/format";
+import { photoUrl } from "@/modules/photos/rules";
 import { approveStudentAction, changeStudentStatusAction } from "@/modules/students/actions";
 import { getStudent } from "@/modules/students/service";
 import { allowedStatusTransitions } from "@/modules/students/status";
@@ -45,7 +46,12 @@ async function StudentHeader({ params }: Pick<StudentLayoutProps, "params">) {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-4">
-          <AvatarBlob name={student.fullName} pigmentSeed={group?.id ?? student.id} size="lg" />
+          <AvatarBlob
+            name={student.fullName}
+            pigmentSeed={group?.id ?? student.id}
+            size="lg"
+            photoUrl={student.photo ? photoUrl(student.id, student.photo.updatedAt) : null}
+          />
           <div className="flex flex-col gap-2">
             <h1 className="font-display text-4xl leading-none">{student.fullName}</h1>
             <div className="flex flex-wrap gap-1.5">

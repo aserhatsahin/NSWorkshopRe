@@ -8,6 +8,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   STUDENT_APPROVED: "Öğrenci kaydı onaylandı",
   STUDENT_STATUS_CHANGED: "Öğrenci durumu değişti",
   STUDENT_PASSWORD_SET: "Öğrenciye giriş şifresi verildi",
+  STUDENT_PHOTO_UPDATED: "Öğrenci fotoğrafı yüklendi",
+  STUDENT_PHOTO_REMOVED: "Öğrenci fotoğrafı kaldırıldı",
   GROUP_CREATED: "Grup eklendi",
   GROUP_UPDATED: "Grup güncellendi",
   PERIOD_CREATED: "Dönem açıldı",
@@ -33,7 +35,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
 export const AUDIT_CATEGORIES = {
   students: {
     label: "Öğrenci",
-    actions: ["STUDENT_REGISTERED", "STUDENT_CREATED", "STUDENT_UPDATED", "STUDENT_APPROVED", "STUDENT_STATUS_CHANGED", "STUDENT_PASSWORD_SET"],
+    actions: ["STUDENT_REGISTERED", "STUDENT_CREATED", "STUDENT_UPDATED", "STUDENT_APPROVED", "STUDENT_STATUS_CHANGED", "STUDENT_PASSWORD_SET", "STUDENT_PHOTO_UPDATED", "STUDENT_PHOTO_REMOVED"],
   },
   lessons: {
     label: "Dönem ve yoklama",

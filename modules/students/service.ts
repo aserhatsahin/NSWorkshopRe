@@ -19,6 +19,8 @@ const studentSelect = {
   customPrice: true,
   createdAt: true,
   user: { select: { email: true, username: true } },
+  // Yalnızca fotoğrafın olup olmadığı ve sürümü; baytlar ayrı istekle gelir.
+  photo: { select: { updatedAt: true } },
   defaultGroup: { select: { id: true, dayOfWeek: true, startTime: true, endTime: true, label: true } },
 } satisfies Prisma.StudentProfileSelect;
 
