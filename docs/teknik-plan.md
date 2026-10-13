@@ -1,5 +1,18 @@
 # NSWorkshop — Teknik Plan
 
+> **Bu belge projenin ilk taslağıdır ve yer yer güncel değildir.** Güncel
+> kurallar `CLAUDE.md`'dedir; çelişki olursa `CLAUDE.md` geçerlidir.
+> Bu taslaktan farklı yapılanlar:
+>
+> - `src/` klasörü yok; Next.js 16 kullanılıyor, `middleware.ts` yerine `proxy.ts`.
+> - Para `Decimal` değil kuruş (`Int`); `decimal.js` kullanılmıyor.
+> - `autoRenew` yok; dönem yenileme her zaman elle. 6. bölüm geçersiz.
+> - `PaymentAllocation` tablosu yok; dağılım ledger kayıtlarının içinde.
+> - `REFUND` tipi yok; yerine `PAYMENT_REVERSAL` ve `MATERIAL_RETURN` var.
+> - Rol JWT'de taşınmıyor; her istekte veritabanından okunuyor.
+> - shadcn/ui kurulmadı; arayüz kendi atölye temasıyla yazıldı.
+> - Yayın adımları `docs/yayin-rehberi.md`'de.
+
 ## 1. Stack
 
 | Katman | Seçim | Neden |

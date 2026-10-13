@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { loginSchema } from "@/modules/auth/schema";
-import { verifyCredentials } from "@/modules/auth/service";
+import { authenticate } from "@/modules/auth/service";
 import { authConfig } from "./config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -14,7 +14,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) {
           return null;
         }
-        const user = await verifyCredentials(parsed.data);
+        const user = await authenticate(parsed.data);
         return user ? { id: user.id } : null;
       },
     }),

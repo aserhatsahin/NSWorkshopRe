@@ -362,3 +362,21 @@ model AuditLog {
   @@index([targetStudentId])
   @@index([createdAt])
 }
+
+// ------------------------------------------------------------
+// GİRİŞ DENEMELERİ
+// ------------------------------------------------------------
+// Başarısız giriş ve kayıt denemelerini sınırlamak için. Uygulama
+// sunucusuz ortamda birden çok kopya olarak çalıştığından sayaç bellekte
+// tutulamaz; her kopya aynı tabloya bakar.
+
+model AuthAttempt {
+  id String @id @default(cuid())
+
+  // "login:<e-posta>" ya da "register:<ip>"
+  key String
+
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}

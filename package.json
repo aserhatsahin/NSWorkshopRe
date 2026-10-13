@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "postinstall": "prisma generate",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "vercel-build": "prisma migrate deploy && next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
