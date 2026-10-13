@@ -3,11 +3,11 @@
 Küçük bir resim atölyesi için öğrenci, ders, ödeme ve malzeme takip sistemi.
 ~70-80 öğrenci, tek atölye. Roller: OWNER, STAFF, STUDENT.
 
-Git akışı için @docs/git-workflow.md
+Git akışı için @docs/git-workflow.md · Yayın için docs/yayin-rehberi.md
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript strict · PostgreSQL · Prisma · Auth.js v5 · Tailwind + shadcn/ui · Zod · Vitest
+Next.js 16 (App Router, Cache Components açık) · TypeScript strict · PostgreSQL · Prisma 7 (pg adapter) · Auth.js v5 · Tailwind 4 (kendi atölye teması, shadcn/ui yok) · Zod 4 · Vitest
 
 ## Komutlar
 
@@ -16,6 +16,8 @@ npm run dev              # geliştirme sunucusu
 npm run build            # production build
 npm run lint             # eslint
 npm run test             # vitest
+npx prisma dev start nsworkshop   # yerel veritabanını başlat
+npm run db:seed          # yerel OWNER hesabı (+ SEED_SAMPLE_DATA=true ise örnek veri)
 npx prisma migrate dev   # şema değişikliğini uygula
 npx prisma studio        # veritabanını görsel incele
 npx prisma generate      # client'ı yeniden üret
@@ -23,16 +25,25 @@ npx prisma generate      # client'ı yeniden üret
 
 ## Klasör yapısı
 
+`src/` klasörü yoktur; her şey proje kökündedir.
+
 ```
-src/
-  app/(auth)|(owner)|(staff)|(student)/   # route grupları
-  lib/auth|permissions|db/
-  modules/<alan>/{service,schema,actions}.ts
-  components/
+app/
+  (auth)/      # giriş, kayıt, ilk kurulum — oturumsuz
+  (staff)/     # OWNER + STAFF: pano, yoklama, öğrenciler, gruplar, malzeme
+  (owner)/     # yalnızca OWNER: finans, personel, geçmiş, ayarlar
+  (student)/   # öğrenci paneli
+  (account)/   # her rol: hesabım
+lib/auth|permissions|db/
+modules/<alan>/{service,schema,actions}.ts
+components/
+proxy.ts       # Next.js 16'da middleware.ts'in yeni adı
 ```
 
 Her `modules/<alan>/` klasöründe üç dosya: `service.ts` (iş mantığı + Prisma),
 `schema.ts` (Zod), `actions.ts` (Server Action: guard + service çağrısı).
+Test edilecek hesap mantığı ayrı saf dosyalarda durur (örn.
+`finance/debt.ts`, `payments/allocation.ts`, `attendance/rules.ts`).
 
 ## Değişmez kurallar
 
@@ -87,10 +98,17 @@ Bunlar projenin temelidir, istisnası yoktur:
 | **Toplam gelir / toplam alacak / raporlar** | ✅ | ❌ |
 | **Borçlular listesi (toplu)** | ✅ | ❌ |
 | Personel yönetimi, ADJUSTMENT girme | ✅ | ❌ |
+| İndirim, dönem iptali, ödeme iptali, malzeme iadesi | ✅ | ❌ |
+| İşlem geçmişi (audit), ayarlar | ✅ | ❌ |
+| Grup ve ürün kataloğu yönetimi, öğrenciye şifre verme | ✅ | ✅ |
 
 STAFF'ın genel finansa erişememesi bu projenin en kritik güvenlik
 gereksinimidir. Global finans fonksiyonları `modules/finance/global.service.ts`
-içinde tutulur ve STAFF'ın eriştiği hiçbir sayfadan import edilmez.
+içinde tutulur ve STAFF'ın eriştiği hiçbir sayfadan import edilmez
+(`global.service.test.ts` bunu dosya taramasıyla doğrular).
+
+Öğrencinin kendi verisi `modules/student-panel/service.ts` üzerinden okunur;
+kimlik parametreyle alınmaz, oturumdan gelir.
 
 ## Dashboard listeleri
 
@@ -138,6 +156,10 @@ Değişmez: `SUM(bir ödemenin transaction'ları) === -payment.amount`
   birikmiş borç uyarı olarak gösterilir — engelleme değil, görünürlük.
 - Ödeme dönem bazında takip edilmez. Ödeme sadece kurs/malzeme kategorisine
   yazılır; "hangi dönemin ücreti kapandı" diye bir kayıt tutulmaz.
+- Bir öğrencinin aynı anda tek aktif dönemi olur; dönem yalnızca aktif
+  öğrenciye açılır.
+- Dönem iptalinde yalnızca işlenmemiş (`UNMARKED`) derslerin ücreti borçtan
+  düşülür; kuruş bölünmezse aşağı yuvarlanır.
 
 ## Kod tarzı
 
@@ -149,6 +171,21 @@ Değişmez: `SUM(bir ödemenin transaction'ları) === -payment.amount`
 - Yorum satırları sadece "neden" için yazılır, "ne yaptığını" anlatmak için
   değil.
 
+## Next.js 16 / Cache Components notları
+
+Bu sürüm alışılmış Next.js'ten farklı davranır; kod yazmadan önce
+`node_modules/next/dist/docs/` altındaki ilgili rehbere bak (bkz. AGENTS.md).
+
+- Oturum, `params`, `searchParams` okuyan her şey `<Suspense>` içinde olmalı.
+- `usePathname` kullanan client bileşenleri de `<Suspense>` içinde olmalı.
+- Server Component'te `new Date()` çağırmadan önce `await connection()`.
+- `requirePermission()` ayrı bağlantıdan sorgu atar; `prisma.$transaction`
+  içinde çağrılmaz, transaction açılmadan önce çağrılır.
+- State'e bağlı (`value=`) alan içeren formlar `onSubmit` ile elle gönderilir;
+  React form action sonrası formu sıfırlar.
+- Branch değiştirdikten sonra `npm run dev` yeniden başlatılmalı; aksi halde
+  eski stil dosyası önbellekten gelir.
+
 ## Test
 
 Her şey test edilmez, ama şunlar zorunlu (Vitest):
@@ -158,6 +195,9 @@ Her şey test edilmez, ama şunlar zorunlu (Vitest):
 3. Reversal — ters kayıt sonrası bakiyenin doğru dönmesi
 4. Permission guard'ları — STAFF'ın `finance.viewGlobal` çağrısının throw etmesi
 
+Servis fonksiyonları veritabanına karşı otomatik test edilmiyor; hesap
+mantığı saf fonksiyonlarda, yetki ve kimlik kuralları mock'lu testlerde.
+
 ## Geliştirme sırası
 
 ```
@@ -165,6 +205,8 @@ Her şey test edilmez, ama şunlar zorunlu (Vitest):
 5. Gruplar   6. Dönemler    7. Yoklama    8. Finans defteri
 9. Ödemeler  10. Malzeme    11-13. Paneller    14. Audit    15. Deploy
 ```
+
+1–15 tamamlandı. Sırada: eski programdan veri aktarımı, öğrenci fotoğrafı.
 
 3. adım (permissions) atlanmaz — sonraki her şey onun üstüne kurulur.
 Audit log 6-10 arası adımlarla paralel yazılır, sona bırakılmaz.
