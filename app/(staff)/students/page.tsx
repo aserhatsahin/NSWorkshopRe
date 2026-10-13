@@ -11,7 +11,7 @@ import { isStudentStatus } from "@/modules/students/status";
 
 export const metadata: Metadata = { title: "Öğrenciler" };
 
-type SearchParams = Promise<{ status?: string | string[]; q?: string | string[] }>;
+type SearchParams = Promise<{ status?: string | string[]; q?: string | string[]; group?: string | string[] }>;
 
 const FILTERS: { status?: StudentStatus; label: string }[] = [
   { label: "Tümü" },
@@ -22,8 +22,11 @@ const FILTERS: { status?: StudentStatus; label: string }[] = [
   { status: "ARCHIVED", label: "Arşiv" },
 ];
 
-function filterHref(status: StudentStatus | undefined, query: string): string {
+function filterHref(status: StudentStatus | undefined, query: string, withoutGroup: boolean): string {
   const params = new URLSearchParams();
+  if (withoutGroup) {
+    params.set("group", "none");
+  }
   if (status) {
     params.set("status", status);
   }
@@ -54,8 +57,9 @@ async function StudentList({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const status = isStudentStatus(params.status) ? params.status : undefined;
   const query = typeof params.q === "string" ? params.q.trim() : "";
+  const withoutGroup = params.group === "none";
 
-  const students = await listStudents({ status, query });
+  const students = await listStudents({ status, query, withoutGroup });
 
   return (
     <>
@@ -65,7 +69,7 @@ async function StudentList({ searchParams }: { searchParams: SearchParams }) {
           return (
             <Link
               key={filter.label}
-              href={filterHref(filter.status, query)}
+              href={filterHref(filter.status, query, withoutGroup)}
               aria-current={isCurrent ? "page" : undefined}
               className={`rounded-full border px-3 py-1 text-sm ${
                 isCurrent ? "border-primary bg-primary text-primary-fg" : "border-line bg-surface"
@@ -75,10 +79,20 @@ async function StudentList({ searchParams }: { searchParams: SearchParams }) {
             </Link>
           );
         })}
+        <Link
+          href={filterHref(status, query, !withoutGroup)}
+          aria-pressed={withoutGroup}
+          className={`rounded-full border px-3 py-1 text-sm ${
+            withoutGroup ? "border-primary bg-primary text-primary-fg" : "border-dashed border-line-strong"
+          }`}
+        >
+          Grubu olmayanlar
+        </Link>
       </nav>
 
       <form action="/students" className="flex gap-2">
         {status ? <input type="hidden" name="status" value={status} /> : null}
+        {withoutGroup ? <input type="hidden" name="group" value="none" /> : null}
         <input
           name="q"
           type="search"

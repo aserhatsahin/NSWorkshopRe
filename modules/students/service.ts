@@ -45,7 +45,7 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 export async function listStudents(
-  filter: { status?: StudentStatus; query?: string; groupId?: string } = {},
+  filter: { status?: StudentStatus; query?: string; groupId?: string; withoutGroup?: boolean } = {},
 ): Promise<StudentSummary[]> {
   await requirePermission("student.view");
 
@@ -56,7 +56,17 @@ export async function listStudents(
       // Durum seçilmediyse arşiv gizlenir; arşivi görmek bilinçli bir seçim olmalı.
       status: filter.status ?? { not: "ARCHIVED" },
       ...(query ? { fullName: { contains: query, mode: "insensitive" } } : {}),
-      ...(filter.groupId ? { defaultGroupId: filter.groupId } : {}),
+      // Bir grubun öğrencileri: varsayılan grubu o olanlar ve varsayılan
+      // grubu farklı (ya da boş) olsa da o grupta aktif dönemi bulunanlar.
+      ...(filter.groupId
+        ? {
+            OR: [
+              { defaultGroupId: filter.groupId },
+              { periods: { some: { groupId: filter.groupId, status: "ACTIVE" } } },
+            ],
+          }
+        : {}),
+      ...(filter.withoutGroup ? { defaultGroupId: null } : {}),
     },
     orderBy: [{ fullName: "asc" }],
     select: studentSelect,

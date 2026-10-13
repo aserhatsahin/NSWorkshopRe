@@ -4,6 +4,7 @@ import type { NavItem } from "@/components/nav-links";
 import { requireRole } from "@/lib/auth/session";
 
 const NAV_ITEMS: NavItem[] = [
+  { href: "/dashboard", label: "Pano", icon: "dashboard" },
   { href: "/attendance", label: "Yoklama", icon: "attendance" },
   { href: "/students", label: "Öğrenciler", icon: "students" },
   { href: "/groups", label: "Gruplar", icon: "groups" },
