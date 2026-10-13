@@ -14,5 +14,8 @@ export default function HomePage() {
 
 async function RedirectToRoleHome(): Promise<never> {
   const user = await requireUser();
-  redirect(user.role === "STUDENT" ? "/panel" : "/dashboard");
+  if (user.role === "STUDENT") {
+    redirect("/panel");
+  }
+  redirect(user.role === "OWNER" ? "/overview" : "/dashboard");
 }

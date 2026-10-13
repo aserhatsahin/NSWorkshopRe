@@ -8,7 +8,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 type AppShellProps = {
   items: NavItem[];
-  // Yalnızca atölye sahibi oturumunda menüye eklenir.
+  // Atölye sahibi oturumunda items yerine gösterilen menü.
   ownerItems?: NavItem[];
   children: ReactNode;
 };
@@ -50,7 +50,7 @@ function LogoutButton({ className }: { className: string }) {
 }
 
 // Bilgisayarda solda sabit menü, telefonda üstte ince başlık ve altta sekme çubuğu.
-export function AppShell({ items, ownerItems = [], children }: AppShellProps) {
+export function AppShell({ items, ownerItems = items, children }: AppShellProps) {
   return (
     <div className="flex flex-1 flex-col md:flex-row">
       <aside className="hidden w-56 shrink-0 flex-col gap-1 bg-nav p-4 md:flex">
@@ -119,7 +119,7 @@ async function RoleLinks({
   ownerItems: NavItem[];
 }) {
   const user = await getCurrentUser();
-  const visible = user?.role === "OWNER" ? [...items, ...ownerItems] : items;
+  const visible = user?.role === "OWNER" ? ownerItems : items;
   return variant === "sidebar" ? <SidebarLinks items={visible} /> : <TabBarLinks items={visible} />;
 }
 

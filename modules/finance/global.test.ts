@@ -12,7 +12,7 @@ describe("summarizeBalances", () => {
 });
 
 function candidate(fullName: string, balance: number, overrides: Partial<DebtorCandidate> = {}): DebtorCandidate {
-  return { id: fullName, fullName, status: "ACTIVE", defaultGroup: null, balance, lastPaymentAt: null, ...overrides };
+  return { id: fullName, fullName, status: "ACTIVE", defaultGroup: null, photo: null, balance, lastPaymentAt: null, ...overrides };
 }
 
 describe("buildDebtors", () => {
