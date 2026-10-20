@@ -53,6 +53,7 @@ export type DebtorCandidate = {
   fullName: string;
   status: StudentStatus;
   defaultGroup: { id: string; dayOfWeek: number; startTime: string; endTime: string; label: string | null } | null;
+  photo: { updatedAt: Date } | null;
   balance: number;
   lastPaymentAt: Date | null;
 };

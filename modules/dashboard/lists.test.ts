@@ -20,7 +20,7 @@ function student(
   periods: DashboardStudent["periods"] = [],
   status: StudentStatus = "ACTIVE",
 ): DashboardStudent {
-  return { id: fullName, fullName, status, defaultGroup: null, periods };
+  return { id: fullName, fullName, status, defaultGroup: null, photo: null, periods };
 }
 
 const names = (items: { fullName: string }[]) => items.map((item) => item.fullName);

@@ -56,6 +56,7 @@ export async function listDebtors(): Promise<DebtorList> {
         fullName: true,
         status: true,
         defaultGroup: { select: { id: true, dayOfWeek: true, startTime: true, endTime: true, label: true } },
+        photo: { select: { updatedAt: true } },
       },
     }),
     // İptal edilmiş ödeme "son ödeme" sayılmaz.
