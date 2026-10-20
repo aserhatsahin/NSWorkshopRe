@@ -222,7 +222,7 @@ Audit log 6-10 arası adımlarla paralel yazılır, sona bırakılmaz.
 
 ## Güncel durum
 
-Son güncelleme: 2026-10-13. Bu bölüm yeni bir oturumun kaldığı yerden devam
+Son güncelleme: 2026-10-20. Bu bölüm yeni bir oturumun kaldığı yerden devam
 edebilmesi içindir; iş bittikçe güncellenir.
 
 ### Canlı ortam
@@ -234,8 +234,12 @@ edebilmesi içindir; iş bittikçe güncellenir.
   Preview yayınları veritabanına bağlanmaz.
 - İlk kurulum `/setup` ile yapıldı; atölye sahibi, bir personel ve deneme
   amaçlı öğrenci hesapları var. Canlıda henüz gerçek öğrenci verisi yok.
-- Alan adı `nsatolye.com` satın alınıyor; Vercel'e bağlanması bekliyor
-  (`docs/yayin-rehberi.md` 5. bölüm).
+- Alan adı `nsatolye.com` (Natro) 2026-10-20'de Vercel'e bağlandı. Ana adres
+  `www.nsatolye.com`; `nsatolye.com` oraya 308 ile yönlenir. DNS Natro'da
+  (Profesyonel DNS Servisi): `A @ 216.198.79.1` ve
+  `CNAME www 94aa8365991e6015.vercel-dns-017.com`. Aynı listedeki MX, SRV,
+  TXT ve `autodiscover` kayıtları Natro e-postası içindir, silinmez.
+  `ns-workshop-re.vercel.app` adresi de çalışmaya devam eder.
 
 ### Çalışma düzeni
 
