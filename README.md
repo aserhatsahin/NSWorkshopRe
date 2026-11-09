@@ -1,6 +1,6 @@
 # NS Atölye
 
-A management system for a small painting workshop: students, weekly lessons, attendance, monthly fees, payments and material sales in one place.
+I built this for my mom's painting workshop. It keeps students, weekly lessons, attendance, monthly fees, payments and material sales in one place, so she can spend less time on paperwork and more time painting with her students.
 It is live at **[nsatolye.com](https://nsatolye.com)** and is a rebuilt version of my earlier PHP project, [NSWorkshop](https://github.com/aserhatsahin/NSWorkshop).
 
 ![Owner dashboard](docs/screenshots/overview.png)
